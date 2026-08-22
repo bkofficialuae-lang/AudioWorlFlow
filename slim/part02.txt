@@ -1,0 +1,174 @@
+lor:#c4b5fd}.ok{color:var(--muted)}
+  .money{font-size:12px;color:#3ecf8e;margin-top:5px;font-weight:900;text-shadow:none}
+  .robux-icon{width:1.05em;height:1.05em;object-fit:cover;display:inline-block;vertical-align:-0.12em;margin-right:.18em;border-radius:2px}.robux-css-icon{display:inline-block;width:.82em;height:.82em;border:2px solid #c9b76b;transform:rotate(45deg);border-radius:2px;vertical-align:-.02em;margin:0 .28em 0 .12em;position:relative}.robux-css-icon:after{content:"";position:absolute;inset:28%;background:#121212;border-radius:1px}
+  .card-link{display:block;margin-top:6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#8ecdf8}
+  .note-preview{font-size:11px;color:#cfd5df;margin-top:5px;line-height:1.25;background:#262932;border:1px solid rgba(255,255,255,.07);padding:5px 7px;border-radius:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;max-width:100%}
+  .empty{color:#aeb4bf;text-align:center;padding:28px 8px;font-size:13px}
+  .column .empty{color:#e2e4e8;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.28)}
+  .list{background:var(--panel);border-radius:6px;border:1px solid var(--line);box-shadow:var(--shadow);overflow:auto}
+  .list table{width:100%;border-collapse:collapse;min-width:950px}
+  .list th,.list td{padding:14px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+  .list th{background:#262830;font-size:12px;color:#b4bac4}
+  .list tr:hover{background:#33353d}
+  .clients-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+  .client-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px;box-shadow:var(--shadow)}
+  .client-card{position:relative}
+  .client-crown{position:absolute;top:14px;right:14px;font-size:22px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.28));user-select:none}
+  .client-card h3{margin:0 0 6px}.client-card p{margin:6px 0;color:#c2c6cf;font-size:13px}
+  .client-card .big{font-size:18px;font-weight:900;color:white}
+  .modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+  .modal-wrap.show{display:flex}
+  .modal{background:var(--panel);width:min(850px,100%);max-height:92vh;overflow:auto;border-radius:7px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.45)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+  .modal-head h2{margin:0;font-size:22px}
+  .form{padding:20px;display:grid;gap:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:7px}
+  .value-row{align-items:start}
+  .assigned-assets{margin-top:10px;background:#24262d;border:1px solid var(--line);border-radius:7px;padding:10px 11px;min-height:112px;max-height:156px;overflow:auto}
+  .assigned-assets-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;font-size:12px;font-weight:900;color:#dbe3ee}
+  .assigned-assets-count{color:#86efac;font-weight:900}
+  .assigned-assets-empty{font-size:12px;color:#8f95a1;padding:10px 0}
+  .assigned-assets-list{display:grid;gap:5px}
+  .assigned-asset-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1f2127;border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:6px 8px;font-size:11px}
+  .assigned-asset-row b{color:#f3f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .assigned-asset-row span{color:#86efac;font-weight:900;white-space:nowrap}
+  .client-select-row{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px;align-items:center}
+  .inline-add-client{height:42px;border:1px solid var(--line);background:#262830;color:#8ecdf8;border-radius:7px;font-size:22px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0}
+  .inline-add-client:hover{background:#30343c;border-color:#5b6472;color:#fff}
+  .field label{font-size:12px;font-weight:900;color:#ced3dc}.field textarea{min-height:95px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus,.toolbar input:focus,.toolbar select:focus{border-color:#76c5fa;box-shadow:0 0 0 3px rgba(22,125,197,.18)}
+  .helper{font-size:12px;color:var(--muted)}
+  .asset-builder{position:relative;background:#23252c;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:4px;z-index:6}
+  .asset-builder.collapsed .asset-list{display:none}
+  .asset-builder.collapsed .asset-builder-head{margin-bottom:0}
+  .asset-builder-toggle{font-size:14px;font-weight:900;color:#8ecdf8;line-height:1;min-width:16px;text-align:right}
+  .asset-builder-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:0;width:100%;background:transparent;border:0;padding:0;cursor:pointer;text-align:left}
+  .asset-builder-head b{font-size:12px;color:#dbe3ee}
+  .asset-subtotal{font-size:12px;font-weight:900;color:#86efac}
+  .asset-list{position:absolute;left:0;right:0;top:calc(100% + 8px);display:grid;gap:5px;background:#23252c;border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:0 18px 34px rgba(0,0,0,.38);max-height:320px;overflow-y:auto;z-index:20}
+  .asset-row{display:grid;grid-template-columns:minmax(0,1fr) auto 24px 22px 24px;align-items:center;gap:6px;padding:6px 7px;border-radius:6px;background:#1d1f25;border:1px solid rgba(255,255,255,.05)}
+  .asset-name{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .asset-price{font-size:11px;color:#9da6b3;min-width:38px;text-align:right}
+  .asset-step{width:24px;height:24px;border:1px solid #454954;background:#2b2e36;color:#e8edf3;border-radius:5px;font-weight:900;line-height:1}
+  .asset-step:hover{background:#353944}
+  .asset-count{min-width:22px;text-align:center;font-size:12px;font-weight:900;color:#fff}
+  .project-total-box{margin-top:8px;background:#1f2127;border:1px solid var(--line);border-radius:7px;padding:9px}
+
+  .status-lock{padding:11px 12px;background:#202227;border:1px dashed var(--line);border-radius:7px;color:#d3d8e1;font-weight:800}
+  .uploader{border:2px dashed #4f5562;border-radius:9px;padding:18px;background:#25272e;text-align:center;transition:.2s}
+  .uploader.drag{border-color:#76c5fa;background:#203243}
+  .uploader p{margin:6px 0;color:#c7cdd8}
+  .preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:10px;margin-top:12px}
+  .preview{background:#25272e;border:1px solid var(--line);border-radius:8px;padding:8px;position:relative}
+  .preview img{width:100%;height:82px;object-fit:cover;border-radius:6px;background:#111}
+  .preview .remove{position:absolute;top:6px;right:6px;border:0;background:rgba(0,0,0,.65);color:white;width:24px;height:24px;border-radius:50%;font-size:12px}
+  .preview .name{font-size:11px;margin-top:6px;color:#d2d7de;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .actions{display:flex;justify-content:flex-end;gap:10px;padding-top:6px;flex-wrap:wrap}
+  .danger{border:1px solid #6a2a31;background:#3b1e24;color:#ffb9c0;padding:10px 14px;border-radius:11px;font-weight:900;margin-right:auto}
+  .hintbox{border:1px solid #2e5876;background:#1e2f3a;color:#bfe9ff;padding:12px 14px;border-radius:8px;font-size:13px}
+  .mobile-menu{display:none}
+  
+  .headline h2{margin:0;font-size:34px;line-height:1.02;font-weight:900;color:#ffffff;letter-spacing:.01em}
+  .headline p{margin:8px 0 0;font-size:19px;font-weight:800;color:var(--blue)}
+  .brand{display:flex;align-items:center;justify-content:center;min-height:0;padding:0 8px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .column{display:flex;flex-direction:column;height:calc(100vh - 290px);min-height:420px;max-height:720px;overflow:hidden}
+  .cards{flex:1;min-height:0;max-height:none;overflow-y:scroll;overflow-x:hidden;padding-right:5px;padding-bottom:4px}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}.app{grid-template-columns:1fr}.sidebar{display:none}.mobile-menu{display:inline-flex}.board{grid-template-columns:repeat(4,300px)}.top-right-cluster{flex-wrap:wrap;justify-content:flex-end}.timezone-box{min-width:210px}}
+  @media(max-width:700px){main{padding:16px}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.topbar{align-items:stretch}.top-right-cluster{width:100%;display:grid;grid-template-columns:1fr}.top-actions{max-width:none}.timezone-box{min-width:0}.month-switch{width:100%;justify-content:space-between}.toolbar input{min-width:100%}.primary{width:100%}.headline h2{font-size:24px}}
+
+  .cloud-overlay{position:fixed;inset:0;background:rgba(10,11,14,.88);backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+  .cloud-overlay.hidden{display:none}
+  .cloud-login{width:min(460px,100%);background:#24262d;border:1px solid #41454f;border-radius:12px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.48)}
+  .cloud-login h2{margin:0 0 6px;font-size:24px}.cloud-login p{margin:0 0 18px;color:#aeb3bd;line-height:1.45;font-size:14px}
+  .cloud-login input{width:100%;background:#1b1d23;color:#fff;border:1px solid #424650;border-radius:8px;padding:12px 13px;outline:none;margin-bottom:10px}
+  .cloud-login input:focus{border-color:#65b9f0;box-shadow:0 0 0 3px rgba(22,125,197,.16)}
+  .cloud-login .cloud-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+  .cloud-login .cloud-error{min-height:18px;color:#fda4af;font-size:12px;font-weight:800;margin-top:6px}
+  .cloud-status{display:inline-flex;align-items:center;gap:7px;margin-top:8px;color:#aeb3bd;font-size:11px;font-weight:800}
+  .cloud-dot{width:8px;height:8px;border-radius:50%;background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,.4)}
+  .cloud-status.saved .cloud-dot{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.45)}
+  .cloud-status.saving .cloud-dot{background:#60a5fa;box-shadow:0 0 8px rgba(96,165,250,.45)}
+  .cloud-status.error .cloud-dot{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,.45)}
+  .cloud-forget{border:0;background:transparent;color:#8ecdf8;padding:0;font-size:11px;font-weight:800;transform:none!important}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><img class="brand-logo" src="https://static.wixstatic.com/media/44691f_1277d8408afb43d5ab43fbb98cdf368e~mv2.png/v1/fill/w_212,h_236,al_c,q_90/BKLLC_LOGO1.png" alt="BK STUDIO LLC logo" /></div>
+
+    <div class="nav">
+      <button data-view="board" class="active">▦ Monthly Board</button>
+      <button data-view="list">☷ List View</button>
+      <button data-view="clients">👥 Clients</button>
+    </div>
+
+    <button class="add" id="sideAdd">＋ Add Work</button>
+    <button class="ghost-btn" id="sideAddClient">＋ Add Client</button>
+
+    <div class="income-box">
+      <div class="income-head">
+        <div class="small-title">Selected Month Income</div>
+        <button class="eye-btn" id="toggleIncome" title="Show or hide income">👁</button>
+      </div>
+      <div class="income-main" id="monthlyIncome">******</div>
+      <div class="income-row"><span>Items This Month</span><b id="monthlyItems">0</b></div>
+    </div>
+
+    <div class="quick-links">
+      <div class="small-title" style="margin-bottom:6px">Links</div>
+      <div class="quick-link-row"><button class="quick-link-open" data-url="https://x.com/bkofficialtwit/status/1929855738320404942?s=20"><span class="quick-link-emoji">💵</span>Price Sheet</button><button class="quick-link-copy" data-copy="https://x.com/bkofficialtwit/status/1929855738320404942?s=20" title="Copy link">⧉</button></div>
+      <div class="quick-link-row"><button class="quick-link-open" data-url="https://x.com/bkofficialtwit"><span class="quick-link-brand brand-x">X</span>Twitter X</button><button class="quick-link-copy" data-copy="https://x.com/bkofficialtwit" title="Copy link">⧉</button></div>
+      <div class="quick-link-row"><button class="quick-link-open" data-url="https://www.behance.net/exclusive_bk"><span class="quick-link-brand brand-be">Bē</span>Portfolio</button><button class="quick-link-copy" data-copy="https://www.behance.net/exclusive_bk" title="Copy link">⧉</button></div>
+      <div class="quick-link-row"><button class="quick-link-open" data-url="https://www.linkedin.com/in/bkrobloxcomposer/"><span class="quick-link-brand brand-in">in</span>LinkedIn</button><button class="quick-link-copy" data-copy="https://www.linkedin.com/in/bkrobloxcomposer/" title="Copy link">⧉</button></div>
+      <div class="quick-link-row"><button class="quick-link-open" data-url="https://discord.gg/dV2SsN943"><span class="quick-link-brand brand-discord">◉</span>Discord Server</button><button class="quick-link-copy" data-copy="https://discord.gg/dV2SsN943" title="Copy link">⧉</button></div>
+      <div class="quick-link-row"><button class="quick-link-open" data-url="https://www.roblox.com/communities/34024361/BK-Studio-LLC#!/about"><span class="quick-link-brand brand-roblox"></span>Roblox Group</button><button class="quick-link-copy" data-copy="https://www.roblox.com/communities/34024361/BK-Studio-LLC#!/about" title="Copy link">⧉</button></div>
+      <div class="quick-link-row"><button class="quick-link-open" data-url="https://www.bkstudio.store/"><span class="quick-link-brand brand-web">⌁</span>Website</button><button class="quick-link-copy" data-copy="https://www.bkstudio.store/" title="Copy link">⧉</button></div>
+    </div>
+
+    <div class="backup">
+      <div class="small-title" style="margin-bottom:6px">Backup</div>
+      <button id="exportBtn">Export my data</button>
+      <button id="importBtn">Import backup</button>
+      <input id="importFile" type="file" accept="application/json" hidden>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="hero-left">
+        <div class="headline">
+          <div class="headline-row">
+            <h2>BK STUDIO LLC</h2>
+            <p>Audio Workflow</p>
+            <div class="cloud-status" id="cloudStatus"><span class="cloud-dot"></span><span id="cloudStatusText">Cloud connecting…</span><button type="button" class="cloud-forget" id="forgetCloudDevice">Forget device</button></div>
+          </div>
+        </div>
+        <div class="hero-controls">
+          <div class="month-switch">
+            <button id="prevMonth">‹</button><div class="month-label" id="monthLabel"></div><button id="nextMonth">›</button><select class="year-select" id="yearSelect" title="Select year"></select>
+          </div>
+          <button class="secondary mobile-menu" id="mobileView">Switch View</button>
+        </div>
+      </div>
+      <div class="top-right-cluster">
+        <div class="timezone-box" id="timezoneBox">
+          <div class="small-title">Live Time</div>
+          <div class="timezone-row"><span class="tz-label" id="tzSfLabel">San Francisco {PST}:</span><span class="tz-time" id="tzSfTime">--:--</span></div>
+          <div class="timezone-row"><span class="tz-label" id="tzNyLabel">New York {EST}:</span><span class="tz-time" id="tzNyTime">--:--</span></div>
+          <div class="timezone-row"><span class="tz-label" id="tzUkLabel">United Kingdom {GMT}:</span><span class="tz-time" id="tzUkTime">--:--</span></div>
+        </div>
+        <div class="top-actions">
+          <button class="primary" id="topAdd">＋ Add Work</button>
+          <button class="shrink-btn" id="toggleCardSize">↕ Shrink Cards</button>
+          <button class="lock-btn" id="toggleMonthLock" title="Lock month" aria-label="Lock month">🔓</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="toolbar">
+      <input id="search" placeholder="Search client or work..." />
+      <select id="priorityFilter"><option value="all">All priorities</option><option>Urgent</option><option>High</option><option>Medium</opt
