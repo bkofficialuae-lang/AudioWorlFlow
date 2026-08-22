@@ -231,8 +231,59 @@
   .brand{display:flex;align-items:center;justify-content:center;min-height:0;padding:0 8px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
   .column{display:flex;flex-direction:column;height:calc(100vh - 290px);min-height:420px;max-height:720px;overflow:hidden}
   .cards{flex:1;min-height:0;max-height:none;overflow-y:scroll;overflow-x:hidden;padding-right:5px;padding-bottom:4px}
-@media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}.app{grid-template-columns:1fr}.sidebar{display:none}.mobile-menu{display:inline-flex}.board{grid-template-columns:repeat(4,300px)}.top-right-cluster{flex-wrap:wrap;justify-content:flex-end}.timezone-box{min-width:210px}}
-  @media(max-width:700px){main{padding:16px}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.topbar{align-items:stretch}.top-right-cluster{width:100%;display:grid;grid-template-columns:1fr}.top-actions{max-width:none}.timezone-box{min-width:0}.month-switch{width:100%;justify-content:space-between}.toolbar input{min-width:100%}.primary{width:100%}.headline h2{font-size:24px}}
+@media(max-width:1100px){
+    .app{grid-template-columns:1fr}
+    .sidebar{display:block;position:fixed;left:0;top:0;width:min(330px,88vw);height:100dvh;z-index:1200;transform:translateX(-105%);transition:transform .22s ease;box-shadow:18px 0 45px rgba(0,0,0,.45)}
+    body.mobile-sidebar-open .sidebar{transform:translateX(0)}
+    .mobile-sidebar-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:1100;opacity:0;pointer-events:none;transition:opacity .2s ease}
+    body.mobile-sidebar-open .mobile-sidebar-backdrop{opacity:1;pointer-events:auto}
+    .mobile-menu{display:inline-flex}
+    .board{grid-template-columns:repeat(4,300px)}
+    .top-right-cluster{flex-wrap:wrap;justify-content:flex-end}
+    .timezone-box{min-width:210px}
+  }
+  @media(max-width:700px){
+    body{overflow-x:hidden}
+    main{padding:12px 12px 20px}
+    .topbar{display:block;margin-bottom:12px}
+    .hero-left{gap:9px}
+    .headline h2{font-size:24px;line-height:1}
+    .headline p{font-size:16px;margin-top:5px}
+    .cloud-status{margin-top:6px;font-size:10px}
+    .hero-controls{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
+    .mobile-menu{height:44px;padding:0 14px;white-space:nowrap}
+    .month-switch{width:100%;min-width:0;height:44px;padding:4px;gap:4px}
+    .month-switch button{width:38px;min-width:38px;height:36px}
+    .month-label{font-size:15px;min-width:0;white-space:nowrap}
+    .year-select{height:36px;min-width:74px;padding:0 8px;font-size:14px}
+    .top-right-cluster{width:100%;display:grid;grid-template-columns:1fr;margin-top:10px;gap:8px}
+    .timezone-box{min-width:0;width:100%;padding:8px 10px}
+    .timezone-box .small-title{font-size:10px;margin-bottom:3px}
+    .timezone-row{font-size:10px;padding:2px 0}
+    .top-actions{display:grid;grid-template-columns:1.6fr 1fr 48px;gap:7px;max-width:none;width:100%}
+    .top-actions .primary,.top-actions .shrink-btn,.top-actions .lock-btn{width:100%;height:44px;padding:0 8px;font-size:13px}
+    .top-actions .lock-btn{min-width:48px}
+    .stats{display:flex;gap:8px;overflow-x:auto;grid-template-columns:none;margin:0 -12px 12px;padding:0 12px 4px;scroll-snap-type:x proximity;scrollbar-width:none}
+    .stats::-webkit-scrollbar{display:none}
+    .stat{flex:0 0 132px;min-height:72px;padding:11px 12px;scroll-snap-align:start}
+    .stat .label{font-size:10px}
+    .stat .value{font-size:24px;margin-top:7px}
+    .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px;margin-bottom:12px}
+    .toolbar input{grid-column:1/-1;min-width:0;width:100%;height:42px}
+    .toolbar select{min-width:0;width:100%;height:42px;font-size:12px}
+    .board{display:grid;grid-template-columns:repeat(4,calc(100vw - 34px));gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;margin:0 -2px}
+    .column{height:calc(100dvh - 330px);min-height:420px;max-height:none;scroll-snap-align:start}
+    .column h3{font-size:12px;padding:11px 10px}
+    .cards{padding-right:3px}
+    .card{padding:10px 11px}
+    .client{font-size:14px}.producer{font-size:11px}.card h4{font-size:13px}
+    .list-wrap,.clients-grid{overflow-x:auto}
+    .modal-wrap{padding:8px;align-items:flex-start}
+    .modal{width:100%;max-height:calc(100dvh - 16px);border-radius:10px}
+    .modal-head{padding:14px}
+    .modal-body{padding:14px}
+    .grid2{grid-template-columns:1fr}
+  }
 
   .cloud-overlay{position:fixed;inset:0;background:rgba(10,11,14,.88);backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
   .cloud-overlay.hidden{display:none}
@@ -304,10 +355,11 @@
           </div>
         </div>
         <div class="hero-controls">
+          <button class="secondary mobile-menu" id="mobileSidebarBtn">☰ Menu</button>
           <div class="month-switch">
             <button id="prevMonth">‹</button><div class="month-label" id="monthLabel"></div><button id="nextMonth">›</button><select class="year-select" id="yearSelect" title="Select year"></select>
           </div>
-          <button class="secondary mobile-menu" id="mobileView">Switch View</button>
+          <button class="secondary mobile-menu" id="mobileView">Change View</button>
         </div>
       </div>
       <div class="top-right-cluster">
@@ -336,7 +388,7 @@
     <section id="viewRoot"></section>
   </main>
 </div>
-
+<div class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop"></div>
 
 <div class="cloud-overlay" id="cloudOverlay">
   <div class="cloud-login">
@@ -1190,12 +1242,14 @@ $('deleteBtn').onclick=()=>{if(!ensureUnlocked('delete cards'))return;const id=$
 $('prevMonth').onclick=()=>{const [y,m]=currentMonth.split('-').map(Number);const d=new Date(y,m-2,1);currentMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;render();};
 $('nextMonth').onclick=()=>{const [y,m]=currentMonth.split('-').map(Number);const d=new Date(y,m,1);currentMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;render();};
 $('yearSelect').onchange=()=>{const month=currentMonth.slice(5,7);currentMonth=`${$('yearSelect').value}-${month}`;render();};
-['topAdd','sideAdd'].forEach(id=>$(id).onclick=openNew);
+['topAdd','sideAdd'].forEach(id=>$(id).onclick=()=>{openNew();document.body.classList.remove('mobile-sidebar-open');});
 $('toggleMonthLock').onclick=()=>{const locked=isCurrentMonthLocked();if(locked){monthLocks[currentMonth]=false;}else{if(!confirm(`Lock ${monthText(currentMonth)}? Cards in this month will not be editable until you unlock it.`))return;monthLocks[currentMonth]=true;}saveLocks();render();};
 $('toggleCardSize').onclick=()=>{compactCards=!compactCards;playShrinkToggleSound();updateCardSizeButton();if(currentView==='board'){renderBoard();requestAnimationFrame(()=>{document.querySelectorAll('.card').forEach(card=>{card.classList.add('quick-shake');setTimeout(()=>card.classList.remove('quick-shake'),260);});});}};
 $('closeModal').onclick=closeModal; $('cancelBtn').onclick=closeModal; $('modalWrap').onclick=e=>{if(e.target===$('modalWrap')) closeModal();};
 $('search').oninput=renderView; $('priorityFilter').onchange=renderView; $('paymentFilter').onchange=renderView;
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{currentView=b.dataset.view;renderView();});
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{currentView=b.dataset.view;renderView();document.body.classList.remove('mobile-sidebar-open');});
+$('mobileSidebarBtn').onclick=()=>document.body.classList.toggle('mobile-sidebar-open');
+$('mobileSidebarBackdrop').onclick=()=>document.body.classList.remove('mobile-sidebar-open');
 $('mobileView').onclick=()=>{currentView=currentView==='board'?'list':currentView==='list'?'clients':'board';renderView();};
 $('exportBtn').onclick=openExportModal;
 $('closeExportModal').onclick=closeExportModal;
@@ -1208,7 +1262,7 @@ $('exportBackupBtn').onclick=downloadFullBackup;
 $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const parsed=JSON.parse(r.result);if(Array.isArray(parsed)){data=parsed; clients=[...new Set(parsed.map(x=>x.client).filter(Boolean))].map(name=>({name, note:''}));monthLocks={};} else if(parsed && Array.isArray(parsed.work)){data=parsed.work; clients=Array.isArray(parsed.clients)?parsed.clients:[];monthLocks=(parsed.monthLocks&&typeof parsed.monthLocks==='object')?parsed.monthLocks:{}; for(const name of [...new Set(data.map(x=>x.client).filter(Boolean))]){ if(!clients.some(c=>c.name===name)) clients.push({name, note:''}); } } else throw 0; save(); saveClients(); saveLocks(); render(); alert('Backup imported successfully.');}catch{alert('Invalid backup file.');}};r.readAsText(f);};
 
-$('sideAddClient').onclick=openClientModal;
+$('sideAddClient').onclick=()=>{openClientModal();document.body.classList.remove('mobile-sidebar-open');};
 $('workAddClient').onclick=openClientModal;
 $('closeClientModal').onclick=closeClientModal;
 $('cancelClientBtn').onclick=closeClientModal;
