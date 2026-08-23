@@ -398,7 +398,7 @@
     <section class="stats" id="stats"></section>
 
     <section class="toolbar">
-      <input id="search" placeholder="Search client or work..." autocomplete="off" autocapitalize="off" spellcheck="false" value="" />
+      <input id="search" type="search" name="bk_workflow_filter_9f3c" placeholder="Search client or work..." autocomplete="new-password" autocapitalize="off" spellcheck="false" value="" data-lpignore="true" data-1p-ignore="true" readonly />
       <select id="priorityFilter"><option value="all">All priorities</option><option>Urgent</option><option>High</option><option>Medium</option><option>Low</option></select>
       <select id="paymentFilter" class="finance-only"><option value="all">All payments</option><option>Not Invoiced</option><option>Invoice Sent</option><option>Partial Payment</option><option>Paid</option></select>
     </section>
@@ -1361,8 +1361,18 @@ $('yearSelect').onchange=()=>{const month=currentMonth.slice(5,7);currentMonth=`
 $('toggleMonthLock').onclick=()=>{const locked=isCurrentMonthLocked();if(locked){monthLocks[currentMonth]=false;}else{if(!confirm(`Lock ${monthText(currentMonth)}? Cards in this month will not be editable until you unlock it.`))return;monthLocks[currentMonth]=true;}playIncomeHideSound();saveLocks();render();};
 $('toggleCardSize').onclick=()=>{compactCards=!compactCards;playShrinkToggleSound();updateCardSizeButton();if(currentView==='board'){renderBoard();requestAnimationFrame(()=>{document.querySelectorAll('.card').forEach(card=>{card.classList.add('quick-shake');setTimeout(()=>card.classList.remove('quick-shake'),260);});});}};
 $('closeModal').onclick=closeModal; $('cancelBtn').onclick=closeModal; $('modalWrap').onclick=e=>{if(e.target===$('modalWrap')) closeModal();};
-$('search').value='';
-$('search').oninput=renderView; $('priorityFilter').onchange=renderView; $('paymentFilter').onchange=renderView;
+const workflowSearch=$('search');
+function clearWorkflowSearch(){
+  if(!workflowSearch) return;
+  workflowSearch.value='';
+}
+clearWorkflowSearch();
+// Prevent password managers / browser autofill from inserting the saved site name into the workflow search field.
+workflowSearch.addEventListener('focus',()=>{workflowSearch.readOnly=false;clearWorkflowSearch();},{once:true});
+window.addEventListener('pageshow',()=>{clearWorkflowSearch();setTimeout(clearWorkflowSearch,80);setTimeout(clearWorkflowSearch,350);});
+setTimeout(clearWorkflowSearch,80);
+setTimeout(clearWorkflowSearch,350);
+workflowSearch.oninput=renderView; $('priorityFilter').onchange=renderView; $('paymentFilter').onchange=renderView;
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{currentView=b.dataset.view;renderView();document.body.classList.remove('mobile-sidebar-open');});
 $('mobileSidebarBtn').onclick=()=>document.body.classList.toggle('mobile-sidebar-open');
 $('mobileSidebarBackdrop').onclick=()=>document.body.classList.remove('mobile-sidebar-open');
