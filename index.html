@@ -88,6 +88,7 @@
   .top-right-cluster{display:flex;align-items:flex-start;gap:10px;margin-left:auto}
   .top-actions{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:148px;max-width:170px}
   .top-actions .primary{width:100%}
+  .top-actions .lock-btn{width:52px;height:36px;align-self:flex-end;padding:0 8px}
   .timezone-box{background:rgba(34,36,43,.82);border:1px solid var(--line);border-radius:8px;padding:7px 9px;box-shadow:var(--shadow);min-width:220px}
   .timezone-box .small-title{margin-bottom:5px;font-size:10px}
   .timezone-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;font-size:11px;border-top:1px solid rgba(255,255,255,.04)}
@@ -1247,7 +1248,7 @@ $('prevMonth').onclick=()=>{const [y,m]=currentMonth.split('-').map(Number);cons
 $('nextMonth').onclick=()=>{const [y,m]=currentMonth.split('-').map(Number);const d=new Date(y,m,1);currentMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;render();};
 $('yearSelect').onchange=()=>{const month=currentMonth.slice(5,7);currentMonth=`${$('yearSelect').value}-${month}`;render();};
 ['topAdd','sideAdd'].forEach(id=>$(id).onclick=()=>{openNew();document.body.classList.remove('mobile-sidebar-open');});
-$('toggleMonthLock').onclick=()=>{const locked=isCurrentMonthLocked();if(locked){monthLocks[currentMonth]=false;}else{if(!confirm(`Lock ${monthText(currentMonth)}? Cards in this month will not be editable until you unlock it.`))return;monthLocks[currentMonth]=true;}saveLocks();render();};
+$('toggleMonthLock').onclick=()=>{const locked=isCurrentMonthLocked();if(locked){monthLocks[currentMonth]=false;}else{if(!confirm(`Lock ${monthText(currentMonth)}? Cards in this month will not be editable until you unlock it.`))return;monthLocks[currentMonth]=true;}playIncomeHideSound();saveLocks();render();};
 $('toggleCardSize').onclick=()=>{compactCards=!compactCards;playShrinkToggleSound();updateCardSizeButton();if(currentView==='board'){renderBoard();requestAnimationFrame(()=>{document.querySelectorAll('.card').forEach(card=>{card.classList.add('quick-shake');setTimeout(()=>card.classList.remove('quick-shake'),260);});});}};
 $('closeModal').onclick=closeModal; $('cancelBtn').onclick=closeModal; $('modalWrap').onclick=e=>{if(e.target===$('modalWrap')) closeModal();};
 $('search').oninput=renderView; $('priorityFilter').onchange=renderView; $('paymentFilter').onchange=renderView;
