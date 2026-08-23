@@ -571,9 +571,15 @@ const CLOUD_KEY='sb_publishable_kK1Xln6DSrXd9LwEw5Kb7A_nvjx7mgJ';
 const CLOUD_WORKSPACE='bk-studio-audio';
 const CLOUD_PASSCODE_KEY='bkStudioAudioCloudPasscode';
 const CLOUD_ROLE_KEY='bkStudioAudioCloudRole';
+const CLOUD_ADMIN_PASSCODE_KEY='bkStudioAudioAdminPasscode';
+const CLOUD_EMPLOYEE_PASSCODE_KEY='bkStudioAudioEmployeePasscode';
 const CLOUD_EMPLOYEE_NAME_KEY='bkStudioAudioEmployeeName';
-let cloudPasscode=localStorage.getItem(CLOUD_PASSCODE_KEY)||'';
-let cloudRole=localStorage.getItem(CLOUD_ROLE_KEY)||'';
+const savedRole=localStorage.getItem(CLOUD_ROLE_KEY)||'';
+const legacySavedPasscode=localStorage.getItem(CLOUD_PASSCODE_KEY)||'';
+if(savedRole==='admin' && legacySavedPasscode && !localStorage.getItem(CLOUD_ADMIN_PASSCODE_KEY)) localStorage.setItem(CLOUD_ADMIN_PASSCODE_KEY,legacySavedPasscode);
+if(savedRole==='employee' && legacySavedPasscode && !localStorage.getItem(CLOUD_EMPLOYEE_PASSCODE_KEY)) localStorage.setItem(CLOUD_EMPLOYEE_PASSCODE_KEY,legacySavedPasscode);
+let cloudPasscode='';
+let cloudRole='';
 let employeeName=localStorage.getItem(CLOUD_EMPLOYEE_NAME_KEY)||'';
 let pendingEmployeeState=null;
 let cloudUpdatedAt='';
@@ -682,8 +688,11 @@ async function finishCloudLogin(state,passcode,role){
   cloudRole=role;
   localStorage.setItem(CLOUD_PASSCODE_KEY,passcode);
   localStorage.setItem(CLOUD_ROLE_KEY,role);
-  if(role==='employee') localStorage.setItem(CLOUD_EMPLOYEE_NAME_KEY,employeeName||'Employee');
-  else localStorage.removeItem(CLOUD_EMPLOYEE_NAME_KEY);
+  if(role==='admin') localStorage.setItem(CLOUD_ADMIN_PASSCODE_KEY,passcode);
+  if(role==='employee') {
+    localStorage.setItem(CLOUD_EMPLOYEE_PASSCODE_KEY,passcode);
+    localStorage.setItem(CLOUD_EMPLOYEE_NAME_KEY,employeeName||'Employee');
+  }
   if(state&&Array.isArray(state.work))data=state.work;
   if(state&&Array.isArray(state.clients))clients=state.clients;
   if(state&&state.monthLocks&&typeof state.monthLocks==='object')monthLocks=state.monthLocks;
@@ -1446,6 +1455,8 @@ function chooseRole(role){
   document.getElementById('cloudUnlockBtn').textContent=role==='admin'?'Login as Admin':'Continue';
   document.getElementById('cloudPasscodeInput').placeholder=role==='admin'?'Admin password':'Employee password';
   document.getElementById('cloudIntro').textContent=role==='admin'?'Admin sees the complete workflow including financial information.':'Employee sees the shared workflow without money or payment information.';
+  const remembered=role==='admin'?localStorage.getItem(CLOUD_ADMIN_PASSCODE_KEY):localStorage.getItem(CLOUD_EMPLOYEE_PASSCODE_KEY);
+  document.getElementById('cloudPasscodeInput').value=remembered||'';
   document.getElementById('cloudPasscodeInput').focus();
 }
 document.getElementById('chooseAdminRole').onclick=()=>chooseRole('admin');
@@ -1460,7 +1471,7 @@ document.getElementById('cloudUnlockBtn').onclick=async()=>{
   await unlockCloud(document.getElementById('cloudPasscodeInput').value,cloudRole);
 };
 document.getElementById('cloudPasscodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('cloudUnlockBtn').click();});
-document.getElementById('forgetCloudDevice').onclick=()=>{localStorage.removeItem(CLOUD_PASSCODE_KEY);localStorage.removeItem(CLOUD_ROLE_KEY);localStorage.removeItem(CLOUD_EMPLOYEE_NAME_KEY);cloudPasscode='';cloudRole='';employeeName='';cloudReady=false;pendingEmployeeState=null;document.body.classList.remove('employee-mode');document.getElementById('cloudPasscodeInput').value='';document.getElementById('loginFields').style.display='none';document.getElementById('employeeNameBox').classList.remove('show');document.getElementById('cloudOverlay').classList.remove('hidden');document.getElementById('cloudIntro').textContent='Choose how you want to enter the workflow.';setCloudStatus('','Cloud locked');};
+document.getElementById('forgetCloudDevice').onclick=()=>{localStorage.removeItem(CLOUD_PASSCODE_KEY);localStorage.removeItem(CLOUD_ROLE_KEY);localStorage.removeItem(CLOUD_ADMIN_PASSCODE_KEY);localStorage.removeItem(CLOUD_EMPLOYEE_PASSCODE_KEY);localStorage.removeItem(CLOUD_EMPLOYEE_NAME_KEY);cloudPasscode='';cloudRole='';employeeName='';cloudReady=false;pendingEmployeeState=null;document.body.classList.remove('employee-mode');document.getElementById('cloudPasscodeInput').value='';document.getElementById('loginFields').style.display='none';document.getElementById('employeeNameBox').classList.remove('show');document.getElementById('cloudOverlay').classList.remove('hidden');document.getElementById('cloudIntro').textContent='Choose how you want to enter the workflow.';setCloudStatus('','Cloud locked');};
 
 async function pollCloudState(){
   if(!cloudReady||!cloudPasscode||cloudSaveInFlight||cloudSaveQueued) return;
@@ -1484,12 +1495,16 @@ updateLiveTimes();
 setInterval(updateLiveTimes, 1000);
 setInterval(pollCloudState, 3000);
 render();
-if(cloudPasscode&&cloudRole){
-  document.getElementById('cloudPasscodeInput').value=cloudPasscode;
-  if(cloudRole==='employee' && employeeName) unlockCloud(cloudPasscode,'employee');
-  else if(cloudRole==='admin') unlockCloud(cloudPasscode,'admin');
-  else setCloudStatus('','Cloud locked');
-}else{setCloudStatus('','Cloud locked');}
+// Always stop at the role chooser so Admin can intentionally test Employee access.
+// Remembered passwords are still filled only after the matching role button is pressed.
+cloudPasscode='';
+cloudRole='';
+document.getElementById('cloudPasscodeInput').value='';
+document.getElementById('loginFields').style.display='none';
+document.getElementById('employeeNameBox').classList.remove('show');
+document.getElementById('cloudOverlay').classList.remove('hidden');
+document.getElementById('cloudIntro').textContent='Choose how you want to enter the workflow.';
+setCloudStatus('','Cloud locked');
 
 </script>
 <div class="copy-toast" id="copyToast">Link copied</div>
