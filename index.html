@@ -297,6 +297,17 @@
   .cloud-login input:focus{border-color:#65b9f0;box-shadow:0 0 0 3px rgba(22,125,197,.16)}
   .cloud-login .cloud-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
   .cloud-login .cloud-error{min-height:18px;color:#fda4af;font-size:12px;font-weight:800;margin-top:6px}
+  .role-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+  .role-choice button{border:1px solid #444a55;background:#1c1f25;color:#e8edf3;border-radius:9px;padding:18px 12px;font-weight:900;font-size:15px}
+  .role-choice button:hover{background:#292d35;border-color:#626a78}
+  .role-choice button.selected{border-color:#65b9f0;background:#203243;color:#fff}
+  .employee-name-box{display:none;margin-top:10px}
+  .employee-name-box.show{display:block}
+  .employee-name-box select{width:100%;background:#1b1d23;color:#fff;border:1px solid #424650;border-radius:8px;padding:12px 13px;outline:none}
+  .role-badge{display:inline-flex;align-items:center;gap:6px;margin-top:7px;padding:4px 8px;border:1px solid #3d444f;border-radius:999px;background:#20242a;color:#cfd5df;font-size:10px;font-weight:900}
+  .employee-access-btn{width:100%;margin-top:10px;border:1px solid #4a505c;background:#24272e;color:#d8dde5;padding:10px 12px;border-radius:8px;font-weight:850;text-align:left}
+  body.employee-mode .finance-only{display:none!important}
+  body.employee-mode .employee-access-btn{display:none!important}
   .cloud-status{display:inline-flex;align-items:center;gap:7px;margin-top:8px;color:#aeb3bd;font-size:11px;font-weight:800}
   .cloud-dot{width:8px;height:8px;border-radius:50%;background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,.4)}
   .cloud-status.saved .cloud-dot{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.45)}
@@ -319,8 +330,9 @@
 
     <button class="add" id="sideAdd">＋ Add Work</button>
     <button class="ghost-btn" id="sideAddClient">＋ Add Client</button>
+    <button class="employee-access-btn" id="employeeAccessBtn">👥 Employee Access</button>
 
-    <div class="income-box">
+    <div class="income-box finance-only">
       <div class="income-head">
         <div class="small-title">Selected Month Income</div>
         <button class="eye-btn" id="toggleIncome" title="Show or hide income">👁</button>
@@ -386,7 +398,7 @@
     <section class="toolbar">
       <input id="search" placeholder="Search client or work..." />
       <select id="priorityFilter"><option value="all">All priorities</option><option>Urgent</option><option>High</option><option>Medium</option><option>Low</option></select>
-      <select id="paymentFilter"><option value="all">All payments</option><option>Not Invoiced</option><option>Invoice Sent</option><option>Partial Payment</option><option>Paid</option></select>
+      <select id="paymentFilter" class="finance-only"><option value="all">All payments</option><option>Not Invoiced</option><option>Invoice Sent</option><option>Partial Payment</option><option>Paid</option></select>
     </section>
 
     <section id="viewRoot"></section>
@@ -396,12 +408,33 @@
 
 <div class="cloud-overlay" id="cloudOverlay">
   <div class="cloud-login">
-    <h2>BK Studio Cloud</h2>
-    <p id="cloudIntro">Enter your workspace passcode. On the first device, choose a new passcode with at least 8 characters. Use the same passcode on every device.</p>
-    <input id="cloudPasscodeInput" type="password" minlength="8" autocomplete="current-password" placeholder="Workspace passcode" />
-    <div class="cloud-error" id="cloudError"></div>
-    <div class="cloud-actions">
-      <button type="button" class="primary" id="cloudUnlockBtn">Unlock Cloud Workspace</button>
+    <h2>BK Studio Audio Workflow</h2>
+    <p id="cloudIntro">Choose how you want to enter the workflow.</p>
+    <div class="role-choice" id="roleChoice">
+      <button type="button" id="chooseAdminRole">👑 Admin</button>
+      <button type="button" id="chooseEmployeeRole">👤 Employee</button>
+    </div>
+    <div id="loginFields" style="display:none">
+      <input id="cloudPasscodeInput" type="password" minlength="8" autocomplete="current-password" placeholder="Password" />
+      <div class="employee-name-box" id="employeeNameBox">
+        <select id="employeeNameSelect"></select>
+      </div>
+      <div class="cloud-error" id="cloudError"></div>
+      <div class="cloud-actions">
+        <button type="button" class="secondary" id="backRoleBtn">Back</button>
+        <button type="button" class="primary" id="cloudUnlockBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-wrap" id="employeeAccessModalWrap">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head"><h2>Employee Access</h2><button class="icon-btn" id="closeEmployeeAccessModal">✕</button></div>
+    <div class="form">
+      <div class="field"><label>Employee Password</label><input id="employeeAccessPassword" type="password" minlength="8" placeholder="Set a shared employee password" /><div class="helper">At least 8 characters. Employees will not receive financial data from the server.</div></div>
+      <div class="field"><label>Employee Names</label><input id="employeeAccessNames" placeholder="Ahsan, Noor, Yousuf" /><div class="helper">After entering the employee password, the person chooses their name.</div></div>
+      <div class="modal-actions"><button type="button" class="secondary" id="cancelEmployeeAccessModal">Cancel</button><button type="button" class="primary" id="saveEmployeeAccessBtn">Save Employee Access</button></div>
     </div>
   </div>
 </div>
@@ -429,7 +462,7 @@
       </div>
       <div class="grid2 value-row">
         <div class="field"><label>Assigned Person</label><select id="assigned"><option value="">Select person</option><option>BK</option><option>Ahsan</option></select><div class="assigned-assets" id="assignedAssets"><div class="assigned-assets-head"><span>Total Assets</span><span class="assigned-assets-count" id="assignedAssetsCount">0</span></div><div id="assignedAssetsBody" class="assigned-assets-empty">No priced assets added</div></div></div>
-        <div class="field">
+        <div class="field finance-only">
           <label>Project Value</label>
           <div class="asset-builder collapsed" id="assetBuilder">
             <button type="button" class="asset-builder-head" id="assetBuilderToggle"><b>Asset Pricing</b><span style="display:flex;align-items:center;gap:10px"><span class="asset-subtotal" id="assetSubtotal">$0</span><span class="asset-builder-toggle" id="assetBuilderArrow">▸</span></span></button>
@@ -450,7 +483,7 @@
         </div>
       </div>
       <div class="grid2">
-        <div class="field"><label>Payment Status</label><select id="payment"><option>Not Invoiced</option><option>Invoice Sent</option><option>Partial Payment</option><option>Paid</option></select></div>
+        <div class="field finance-only"><label>Payment Status</label><select id="payment"><option>Not Invoiced</option><option>Invoice Sent</option><option>Partial Payment</option><option>Paid</option></select></div>
         <div class="field"><label>Mark Completed</label><label style="display:flex;align-items:center;gap:10px;background:var(--bg-2);border:1px solid var(--line);padding:12px;border-radius:7px"><input id="completedTick" type="checkbox" style="width:18px;height:18px"> <span class="helper" style="font-size:14px;color:var(--text)">Tick this if the work is completed</span></label></div>
       </div>
       <div class="field"><label>Reference Link</label><input id="referenceLink" type="url" placeholder="https://..." /></div>
@@ -500,7 +533,7 @@
       <div class="actions">
         <button type="button" class="secondary" id="exportBackupBtn">Full Backup JSON</button>
         <button type="button" class="secondary" id="cancelExportBtn">Cancel</button>
-        <button type="button" class="primary" id="exportExcelBtn">Export Excel Report</button>
+        <button type="button" class="primary" id="exportExcelBtn" class="finance-only">Export Excel Report</button>
       </div>
     </div>
   </div>
@@ -537,7 +570,13 @@ const CLOUD_URL='https://zwfdtfblacbbmcbjrdzf.supabase.co';
 const CLOUD_KEY='sb_publishable_kK1Xln6DSrXd9LwEw5Kb7A_nvjx7mgJ';
 const CLOUD_WORKSPACE='bk-studio-audio';
 const CLOUD_PASSCODE_KEY='bkStudioAudioCloudPasscode';
+const CLOUD_ROLE_KEY='bkStudioAudioCloudRole';
+const CLOUD_EMPLOYEE_NAME_KEY='bkStudioAudioEmployeeName';
 let cloudPasscode=localStorage.getItem(CLOUD_PASSCODE_KEY)||'';
+let cloudRole=localStorage.getItem(CLOUD_ROLE_KEY)||'';
+let employeeName=localStorage.getItem(CLOUD_EMPLOYEE_NAME_KEY)||'';
+let pendingEmployeeState=null;
+let cloudUpdatedAt='';
 let cloudReady=false;
 let cloudSaveTimer=null;
 let cloudSaveInFlight=false;
@@ -574,6 +613,10 @@ function localPersist(){
 }
 
 function currentCloudState(){return {work:data,clients,monthLocks};}
+function isEmployee(){return cloudRole==='employee';}
+function isAdmin(){return cloudRole==='admin';}
+function currentActor(){return isEmployee()?(employeeName||'Employee'):'BK';}
+function stampActor(item){if(!item)return item;item.lastEditedBy=currentActor();item.lastEditedAt=new Date().toISOString();return item;}
 
 function scheduleCloudSave(){
   localPersist();
@@ -589,8 +632,10 @@ async function flushCloudSave(){
   cloudSaveInFlight=true;
   cloudSaveQueued=false;
   try{
-    await cloudRpc('save_audio_workflow_state',{p_slug:CLOUD_WORKSPACE,p_passcode:cloudPasscode,p_state:currentCloudState()});
-    setCloudStatus('saved','Cloud saved');
+    const fn=isEmployee()?'save_employee_audio_workflow_state':'save_audio_workflow_state';
+    const ts=await cloudRpc(fn,{p_slug:CLOUD_WORKSPACE,p_passcode:cloudPasscode,p_state:currentCloudState()});
+    if(ts) cloudUpdatedAt=String(ts);
+    setCloudStatus('saved',isEmployee()?`Employee • ${employeeName||'Staff'} • Cloud saved`:'Admin • Cloud saved');
   }catch(err){
     console.error(err);
     setCloudStatus('error','Cloud save failed');
@@ -600,38 +645,75 @@ async function flushCloudSave(){
   }
 }
 
-async function unlockCloud(passcode){
+async function unlockCloud(passcode,role=cloudRole){
   const err=document.getElementById('cloudError');
   if(err)err.textContent='';
+  if(!role){if(err)err.textContent='Choose Admin or Employee first.';return false;}
   if(!passcode||passcode.length<8){if(err)err.textContent='Use at least 8 characters.';return false;}
   try{
     setCloudStatus('saving','Connecting…');
-    const state=await cloudRpc('init_audio_workflow_state',{p_slug:CLOUD_WORKSPACE,p_passcode:passcode});
-    cloudPasscode=passcode;
-    localStorage.setItem(CLOUD_PASSCODE_KEY,passcode);
-    if(state&&Array.isArray(state.work))data=state.work;
-    if(state&&Array.isArray(state.clients))clients=state.clients;
-    if(state&&state.monthLocks&&typeof state.monthLocks==='object')monthLocks=state.monthLocks;
-    cloudReady=true;
-    if((!data||data.length===0) && INITIAL_BACKUP && Array.isArray(INITIAL_BACKUP.work) && INITIAL_BACKUP.work.length){
-      data=INITIAL_BACKUP.work;
-      clients=Array.isArray(INITIAL_BACKUP.clients)?INITIAL_BACKUP.clients:[];
-      monthLocks=(INITIAL_BACKUP.monthLocks&&typeof INITIAL_BACKUP.monthLocks==='object')?INITIAL_BACKUP.monthLocks:{};
-      localPersist();
-      await cloudRpc('save_audio_workflow_state',{p_slug:CLOUD_WORKSPACE,p_passcode:cloudPasscode,p_state:currentCloudState()});
+    let state;
+    if(role==='employee'){
+      state=await cloudRpc('get_employee_audio_workflow_state',{p_slug:CLOUD_WORKSPACE,p_passcode:passcode});
+      const names=Array.isArray(state?._employee_names)?state._employee_names.filter(Boolean):[];
+      if(!employeeName || !names.includes(employeeName)){
+        pendingEmployeeState=state;
+        document.getElementById('employeeNameSelect').innerHTML=names.length?names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join(''):'<option value="Employee">Employee</option>';
+        document.getElementById('employeeNameBox').classList.add('show');
+        document.getElementById('cloudUnlockBtn').textContent='Enter Workflow';
+        cloudPasscode=passcode;
+        cloudRole='employee';
+        return 'choose-name';
+      }
     }else{
-      localPersist();
+      state=await cloudRpc('init_audio_workflow_state',{p_slug:CLOUD_WORKSPACE,p_passcode:passcode});
     }
-    document.getElementById('cloudOverlay')?.classList.add('hidden');
-    setCloudStatus('saved','Cloud connected');
-    render();
-    return true;
+    return finishCloudLogin(state,passcode,role);
   }catch(e){
     console.error(e);
     setCloudStatus('error','Cloud locked');
-    if(err)err.textContent='Incorrect passcode, or cloud connection failed.';
+    if(err)err.textContent=role==='employee'?'Incorrect employee password.':'Incorrect admin password.';
     return false;
   }
+}
+
+async function finishCloudLogin(state,passcode,role){
+  cloudPasscode=passcode;
+  cloudRole=role;
+  localStorage.setItem(CLOUD_PASSCODE_KEY,passcode);
+  localStorage.setItem(CLOUD_ROLE_KEY,role);
+  if(role==='employee') localStorage.setItem(CLOUD_EMPLOYEE_NAME_KEY,employeeName||'Employee');
+  else localStorage.removeItem(CLOUD_EMPLOYEE_NAME_KEY);
+  if(state&&Array.isArray(state.work))data=state.work;
+  if(state&&Array.isArray(state.clients))clients=state.clients;
+  if(state&&state.monthLocks&&typeof state.monthLocks==='object')monthLocks=state.monthLocks;
+  cloudUpdatedAt=String(state?._updated_at||'');
+  cloudReady=true;
+  if(role==='admin' && (!data||data.length===0) && INITIAL_BACKUP && Array.isArray(INITIAL_BACKUP.work) && INITIAL_BACKUP.work.length){
+    data=INITIAL_BACKUP.work;
+    clients=Array.isArray(INITIAL_BACKUP.clients)?INITIAL_BACKUP.clients:[];
+    monthLocks=(INITIAL_BACKUP.monthLocks&&typeof INITIAL_BACKUP.monthLocks==='object')?INITIAL_BACKUP.monthLocks:{};
+    localPersist();
+    const ts=await cloudRpc('save_audio_workflow_state',{p_slug:CLOUD_WORKSPACE,p_passcode:cloudPasscode,p_state:currentCloudState()});
+    if(ts) cloudUpdatedAt=String(ts);
+  }else localPersist();
+  document.body.classList.toggle('employee-mode',role==='employee');
+  document.getElementById('cloudOverlay')?.classList.add('hidden');
+  setCloudStatus('saved',role==='employee'?`Employee • ${employeeName||'Staff'} • Cloud connected`:'Admin • Cloud connected');
+  applyRoleUI();
+  render();
+  return true;
+}
+
+function applyRoleUI(){
+  document.body.classList.toggle('employee-mode',isEmployee());
+  const payFilter=$('paymentFilter'); if(payFilter && isEmployee()) payFilter.value='all';
+  const badgeText=isEmployee()?`Employee • ${employeeName||'Staff'}`:'Admin';
+  const status=$('cloudStatus');
+  if(status && !status.querySelector('.role-badge')){
+    const b=document.createElement('span'); b.className='role-badge'; b.id='roleBadge'; status.appendChild(b);
+  }
+  if($('roleBadge')) $('roleBadge').textContent=badgeText;
 }
 
 const KEY='monthlyWorkManager_v2';
@@ -782,7 +864,7 @@ function switchValueType(){
 }
 function daysLeft(d){if(!d)return null;const today=new Date();today.setHours(0,0,0,0);const x=new Date(d+'T00:00:00');return Math.round((x-today)/86400000)}
 function deadlineHtml(d,status){if(status==='Completed')return '<span class="deadline ok" style="color:#86efac">Delivered</span>';const n=daysLeft(d);if(n===null)return '<span class="deadline ok">No deadline</span>';if(n<0)return `<span class="deadline overdue">${Math.abs(n)} day${Math.abs(n)!==1?'s':''} overdue</span>`;if(n===0)return '<span class="deadline today">Due today</span>';if(n<=3)return `<span class="deadline soon">Due in ${n} day${n!==1?'s':''}</span>`;return `<span class="deadline ok">Due in ${n} days</span>`}
-function filtered(){const q=$('search').value.toLowerCase();const pf=$('priorityFilter').value;const pay=$('paymentFilter').value;return data.filter(x=>x.workMonth===currentMonth).filter(x=>(`${x.client} ${x.title} ${x.notes||''}`).toLowerCase().includes(q)).filter(x=>pf==='all'||x.priority===pf).filter(x=>pay==='all'||x.payment===pay)}
+function filtered(){const q=$('search').value.toLowerCase();const pf=$('priorityFilter').value;const pay=isEmployee()?'all':$('paymentFilter').value;return data.filter(x=>x.workMonth===currentMonth).filter(x=>(`${x.client} ${x.title} ${x.notes||''}`).toLowerCase().includes(q)).filter(x=>pf==='all'||x.priority===pf).filter(x=>pay==='all'||x.payment===pay)}
 function selectedMonthItems(){return data.filter(x=>x.workMonth===currentMonth)}
 
 
@@ -987,6 +1069,7 @@ function renderStats(){
 
 function renderSidebarTotals(){
   const m=selectedMonthItems();
+  if(isEmployee()){ if($('monthlyItems')) $('monthlyItems').textContent=String(m.length); return; }
   const total=m.reduce((s,x)=>s+usdValue(x),0);
   $('monthlyIncome').textContent=incomeVisible ? money(total) : '******';
   $('monthlyItems').textContent=String(m.length);
@@ -1013,7 +1096,7 @@ function renderBoard(){
   document.querySelectorAll('.card-rank-minus').forEach(btn=>btn.addEventListener('click', e=>{e.stopPropagation();changeCardRank(btn.dataset.id,-1);}));
   document.querySelectorAll('.card-rank-plus').forEach(btn=>btn.addEventListener('click', e=>{e.stopPropagation();changeCardRank(btn.dataset.id,1);}));
   document.querySelectorAll('.card-rank-btn,.card-rank-minus,.card-rank-plus,.card-rank-menu').forEach(el=>{el.addEventListener('dblclick',e=>{e.stopPropagation();});el.addEventListener('mousedown',e=>{e.stopPropagation();});});
-  document.querySelectorAll('.column').forEach(col=>{col.addEventListener('dragover',e=>e.preventDefault());col.addEventListener('drop',e=>{e.preventDefault();if(isCurrentMonthLocked()||!draggedId)return;const index=data.findIndex(x=>x.id===draggedId);if(index!==-1){const x=data[index];const wasCompleted=x.status==='Completed';x.status=col.dataset.col;data.splice(index,1);data.unshift(x);save();if(x.status==='Completed'&&!wasCompleted) playCompletedSound(); else playCardMoveSound();render()}draggedId=null})});
+  document.querySelectorAll('.column').forEach(col=>{col.addEventListener('dragover',e=>e.preventDefault());col.addEventListener('drop',e=>{e.preventDefault();if(isCurrentMonthLocked()||!draggedId)return;const index=data.findIndex(x=>x.id===draggedId);if(index!==-1){const x=data[index];const wasCompleted=x.status==='Completed';x.status=col.dataset.col;stampActor(x);data.splice(index,1);data.unshift(x);save();if(x.status==='Completed'&&!wasCompleted) playCompletedSound(); else playCardMoveSound();render()}draggedId=null})});
 }
 
 function cardHtml(x){
@@ -1037,19 +1120,24 @@ function cardHtml(x){
     ${deadlineHtml(x.deadline,x.status)}
     <div class="meta">
       <span class="pill ${x.priority.toLowerCase()}">${esc(x.priority)}</span>
-      <span class="pill">${esc(x.payment)}</span>
+      ${isAdmin()&&x.payment?`<span class="pill">${esc(x.payment)}</span>`:''}
       ${x.assigned?`<span class="pill">👤 ${esc(x.assigned)}</span>`:''}
+      ${x.lastEditedBy?`<span class="pill" title="Last edited">✎ ${esc(x.lastEditedBy)}</span>`:''}
       ${(x.images||[]).length?`<span class="pill">🖼️ ${(x.images||[]).length}</span>`:''}
     </div>
     ${thumbs?`<div class="thumbs">${thumbs}</div>`:''}
     ${x.referenceLink?`<a class="card-link" href="${esc(x.referenceLink)}" target="_blank" rel="noopener">🔗 Reference Link</a>`:''}
-    <div class="money">${x.value?`💵 ${valueLabel(x)}`:'💵 $0'} </div>
+    ${isAdmin()?`<div class="money">${x.value?`💵 ${valueLabel(x)}`:'💵 $0'} </div>`:''}
   </div>`;
 }
 
 function renderList(){
   const items=filtered();
-  $('viewRoot').innerHTML=`<div class="list"><table><thead><tr><th>Client</th><th>Producer</th><th>Work</th><th>Deadline</th><th>Status</th><th>Priority</th><th>Assigned</th><th>Payment</th><th>Value</th><th>Images</th><th>Link</th></tr></thead><tbody>${items.map(x=>`<tr data-id="${x.id}" style="cursor:pointer"><td>${esc(x.client)}</td><td>${esc(x.producer||'—')}</td><td><b>${esc(x.title)}</b></td><td>${x.deadline?esc(x.deadline):'—'}</td><td>${x.status==='Completed'?'✓ ':''}${esc(x.status)}</td><td>${esc(x.priority)}</td><td>${esc(x.assigned||'—')}</td><td>${esc(x.payment)}</td><td>${x.value?valueLabel(x):'—'}</td><td>${(x.images||[]).length||0}</td><td>${x.referenceLink?'Yes':'—'}</td></tr>`).join('')||'<tr><td colspan="11" class="empty">No work in this month</td></tr>'}</tbody></table></div>`;
+  if(isEmployee()){
+    $('viewRoot').innerHTML=`<div class="list"><table><thead><tr><th>Client</th><th>Producer</th><th>Work</th><th>Deadline</th><th>Status</th><th>Priority</th><th>Assigned</th><th>Images</th><th>Link</th></tr></thead><tbody>${items.map(x=>`<tr data-id="${x.id}" style="cursor:pointer"><td>${esc(x.client)}</td><td>${esc(x.producer||'—')}</td><td><b>${esc(x.title)}</b></td><td>${x.deadline?esc(x.deadline):'—'}</td><td>${x.status==='Completed'?'✓ ':''}${esc(x.status)}</td><td>${esc(x.priority)}</td><td>${esc(x.assigned||'—')}</td><td>${(x.images||[]).length||0}</td><td>${x.referenceLink?'Yes':'—'}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">No work in this month</td></tr>'}</tbody></table></div>`;
+  }else{
+    $('viewRoot').innerHTML=`<div class="list"><table><thead><tr><th>Client</th><th>Producer</th><th>Work</th><th>Deadline</th><th>Status</th><th>Priority</th><th>Assigned</th><th>Payment</th><th>Value</th><th>Images</th><th>Link</th></tr></thead><tbody>${items.map(x=>`<tr data-id="${x.id}" style="cursor:pointer"><td>${esc(x.client)}</td><td>${esc(x.producer||'—')}</td><td><b>${esc(x.title)}</b></td><td>${x.deadline?esc(x.deadline):'—'}</td><td>${x.status==='Completed'?'✓ ':''}${esc(x.status)}</td><td>${esc(x.priority)}</td><td>${esc(x.assigned||'—')}</td><td>${esc(x.payment)}</td><td>${x.value?valueLabel(x):'—'}</td><td>${(x.images||[]).length||0}</td><td>${x.referenceLink?'Yes':'—'}</td></tr>`).join('')||'<tr><td colspan="11" class="empty">No work in this month</td></tr>'}</tbody></table></div>`;
+  }
   document.querySelectorAll('tbody tr[data-id]').forEach(r=>r.onclick=()=>openEdit(r.dataset.id));
 }
 
@@ -1057,6 +1145,10 @@ function renderClients(){
   const map={};
   data.forEach(x=>{map[x.client]??=[];map[x.client].push(x)});
   const names=[...new Set([...clients.map(c=>c.name), ...Object.keys(map)])].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  if(isEmployee()){
+    $('viewRoot').innerHTML=`<div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,clientMeta=clients.find(c=>c.name===n);return `<div class="client-card"><h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||'<div class="empty">No clients yet</div>'}</div>`;
+    return;
+  }
   const totalsByClient=Object.fromEntries(names.map(n=>[n,(map[n]||[]).reduce((s,x)=>s+usdValue(x),0)]));
   const topFive=new Set([...names].sort((a,b)=>totalsByClient[b]-totalsByClient[a]).slice(0,5));
   $('viewRoot').innerHTML=`<div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,total=totalsByClient[n],out=arr.filter(x=>x.payment!=='Paid').reduce((s,x)=>s+usdValue(x),0), clientMeta=clients.find(c=>c.name===n);return `<div class="client-card">${topFive.has(n)?'<span class="client-crown" title="Top 5 client">👑</span>':''}<h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>Total value</p><div class="big">${money(total)}</div><p>Outstanding: <b>${money(out)}</b></p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||'<div class="empty">No clients yet</div>'}</div>`;
@@ -1072,6 +1164,7 @@ function changeCardRank(id, delta){
   const item=data.find(x=>x.id===id);
   if(!item) return;
   item.cardRank = Math.max(0, Number(item.cardRank||0) + delta);
+  stampActor(item);
   save();
   renderView();
 }
@@ -1082,6 +1175,7 @@ function toggleComplete(id){
   if(!item) return;
   const completing=item.status!=='Completed';
   item.status = completing ? 'Completed' : 'To Do';
+  stampActor(item);
   save();
   if(completing) playCompletedSound(); else playCardMoveSound();
   render();
@@ -1104,6 +1198,7 @@ function duplicateCard(id){
   if(!item) return;
   const copy=JSON.parse(JSON.stringify(item));
   copy.id=Date.now().toString() + Math.random().toString(36).slice(2,6);
+  stampActor(copy);
   data.unshift(copy);
   save();
   render();
@@ -1161,23 +1256,24 @@ function openEdit(id){
   $('priority').value=x.priority||'Medium';
   $('assigned').value=x.assigned||'';
   tempAssetCounts=JSON.parse(JSON.stringify(x.assetCounts||{}));
-  const assetsUsd=assetUsdSubtotal(tempAssetCounts);
-  if(x.manualValue !== undefined){
-    $('valueType').value=x.manualValueType||'USD';
-    $('valueType').dataset.prevType=x.manualValueType||'USD';
-    $('value').value=x.manualValue||'';
-  }else{
-    // Migration for cards created before manual + asset totals were separated.
-    const oldTotalUsd=usdValue(x);
-    const oldManualUsd=Math.max(0, oldTotalUsd-assetsUsd);
-    const oldType=x.valueType||'USD';
-    $('valueType').value=oldType;
-    $('valueType').dataset.prevType=oldType;
-    $('value').value=oldType==='RBX' ? Math.round(oldManualUsd*280) : Number(oldManualUsd.toFixed(2));
+  if(isAdmin()){
+    const assetsUsd=assetUsdSubtotal(tempAssetCounts);
+    if(x.manualValue !== undefined){
+      $('valueType').value=x.manualValueType||'USD';
+      $('valueType').dataset.prevType=x.manualValueType||'USD';
+      $('value').value=x.manualValue||'';
+    }else{
+      const oldTotalUsd=usdValue(x);
+      const oldManualUsd=Math.max(0, oldTotalUsd-assetsUsd);
+      const oldType=x.valueType||'USD';
+      $('valueType').value=oldType;
+      $('valueType').dataset.prevType=oldType;
+      $('value').value=oldType==='RBX' ? Math.round(oldManualUsd*280) : Number(oldManualUsd.toFixed(2));
+    }
+    renderAssetBuilder();
+    updateValuePreview();
+    $('payment').value=x.payment||'Not Invoiced';
   }
-  renderAssetBuilder();
-  updateValuePreview();
-  $('payment').value=x.payment||'Not Invoiced';
   $('completedTick').checked=(x.status==='Completed');
   $('referenceLink').value=x.referenceLink||'';
   $('notes').value=x.notes||'';
@@ -1226,18 +1322,21 @@ $('workForm').onsubmit=e=>{
     status: $('completedTick').checked ? 'Completed' : (id ? $('status').value : 'To Do'),
     priority:$('priority').value,
     assigned:$('assigned').value.trim(),
-    manualValueType:$('valueType').value,
-    manualValue:+$('value').value||0,
-    totalUsd:Number(computedProjectTotalUsd().toFixed(2)),
-    valueType:'USD',
-    value:Number(computedProjectTotalUsd().toFixed(2)),
-    assetCounts:JSON.parse(JSON.stringify(tempAssetCounts)),
-    payment:$('payment').value,
+    ...(isAdmin()?{
+      manualValueType:$('valueType').value,
+      manualValue:+$('value').value||0,
+      totalUsd:Number(computedProjectTotalUsd().toFixed(2)),
+      valueType:'USD',
+      value:Number(computedProjectTotalUsd().toFixed(2)),
+      assetCounts:JSON.parse(JSON.stringify(tempAssetCounts)),
+      payment:$('payment').value
+    }:{}),
     referenceLink:$('referenceLink').value.trim(),
     notes:$('notes').value.trim(),
     images:tempImages
   };
   if(!obj.client || !obj.title || !obj.workMonth) return;
+  stampActor(obj);
   addClientByName(obj.client);
   if(id) data=data.map(x=>x.id===id?obj:x); else data.unshift(obj);
   save(); saveClients(); currentMonth=obj.workMonth; closeModal(); render();
@@ -1273,6 +1372,31 @@ $('closeClientModal').onclick=closeClientModal;
 $('cancelClientBtn').onclick=closeClientModal;
 $('clientModalWrap').onclick=e=>{ if(e.target===$('clientModalWrap')) closeClientModal(); };
 $('clientForm').onsubmit=e=>{ e.preventDefault(); const name=$('clientNameOnly').value.trim(); if(!name) return; const savedName=addClientByName(name, $('clientNote').value); refreshClientOptions(savedName); closeClientModal(); };
+
+async function openEmployeeAccessModal(){
+  if(!isAdmin()) return;
+  try{
+    const settings=await cloudRpc('get_audio_workflow_access_settings',{p_slug:CLOUD_WORKSPACE,p_admin_passcode:cloudPasscode});
+    $('employeeAccessNames').value=(settings?.employee_names||[]).join(', ');
+    $('employeeAccessPassword').value='';
+    $('employeeAccessModalWrap').classList.add('show');
+  }catch(e){alert('Could not open employee access settings.');}
+}
+$('employeeAccessBtn').onclick=openEmployeeAccessModal;
+$('closeEmployeeAccessModal').onclick=()=>$('employeeAccessModalWrap').classList.remove('show');
+$('cancelEmployeeAccessModal').onclick=()=>$('employeeAccessModalWrap').classList.remove('show');
+$('employeeAccessModalWrap').onclick=e=>{if(e.target===$('employeeAccessModalWrap'))$('employeeAccessModalWrap').classList.remove('show');};
+$('saveEmployeeAccessBtn').onclick=async()=>{
+  const pass=$('employeeAccessPassword').value;
+  const names=$('employeeAccessNames').value.split(',').map(x=>x.trim()).filter(Boolean);
+  if(pass.length<8){alert('Employee password must be at least 8 characters.');return;}
+  if(!names.length){alert('Add at least one employee name.');return;}
+  try{
+    await cloudRpc('set_audio_workflow_employee_access',{p_slug:CLOUD_WORKSPACE,p_admin_passcode:cloudPasscode,p_employee_passcode:pass,p_employee_names:names});
+    $('employeeAccessModalWrap').classList.remove('show');
+    alert('Employee access updated successfully.');
+  }catch(e){console.error(e);alert('Could not update employee access.');}
+};
 
 document.querySelectorAll('.quick-link-open').forEach(btn=>btn.onclick=()=>window.open(btn.dataset.url,'_blank','noopener'));
 document.querySelectorAll('.quick-link-copy').forEach(btn=>btn.onclick=async()=>{
@@ -1313,14 +1437,60 @@ document.addEventListener('click', e=>{
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape' && assetBuilderOpen) setAssetBuilderOpen(false);
 });
-document.getElementById('cloudUnlockBtn').onclick=()=>unlockCloud(document.getElementById('cloudPasscodeInput').value);
-document.getElementById('cloudPasscodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')unlockCloud(e.currentTarget.value);});
-document.getElementById('forgetCloudDevice').onclick=()=>{localStorage.removeItem(CLOUD_PASSCODE_KEY);cloudPasscode='';cloudReady=false;document.getElementById('cloudPasscodeInput').value='';document.getElementById('cloudOverlay').classList.remove('hidden');setCloudStatus('','Cloud locked');};
+function chooseRole(role){
+  cloudRole=role;
+  document.getElementById('chooseAdminRole').classList.toggle('selected',role==='admin');
+  document.getElementById('chooseEmployeeRole').classList.toggle('selected',role==='employee');
+  document.getElementById('loginFields').style.display='block';
+  document.getElementById('employeeNameBox').classList.remove('show');
+  document.getElementById('cloudUnlockBtn').textContent=role==='admin'?'Login as Admin':'Continue';
+  document.getElementById('cloudPasscodeInput').placeholder=role==='admin'?'Admin password':'Employee password';
+  document.getElementById('cloudIntro').textContent=role==='admin'?'Admin sees the complete workflow including financial information.':'Employee sees the shared workflow without money or payment information.';
+  document.getElementById('cloudPasscodeInput').focus();
+}
+document.getElementById('chooseAdminRole').onclick=()=>chooseRole('admin');
+document.getElementById('chooseEmployeeRole').onclick=()=>chooseRole('employee');
+document.getElementById('backRoleBtn').onclick=()=>{document.getElementById('loginFields').style.display='none';document.getElementById('employeeNameBox').classList.remove('show');document.getElementById('cloudIntro').textContent='Choose how you want to enter the workflow.';cloudRole='';pendingEmployeeState=null;};
+document.getElementById('cloudUnlockBtn').onclick=async()=>{
+  if(cloudRole==='employee' && pendingEmployeeState && document.getElementById('employeeNameBox').classList.contains('show')){
+    employeeName=document.getElementById('employeeNameSelect').value||'Employee';
+    const state=pendingEmployeeState; pendingEmployeeState=null;
+    await finishCloudLogin(state,cloudPasscode,'employee'); return;
+  }
+  await unlockCloud(document.getElementById('cloudPasscodeInput').value,cloudRole);
+};
+document.getElementById('cloudPasscodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('cloudUnlockBtn').click();});
+document.getElementById('forgetCloudDevice').onclick=()=>{localStorage.removeItem(CLOUD_PASSCODE_KEY);localStorage.removeItem(CLOUD_ROLE_KEY);localStorage.removeItem(CLOUD_EMPLOYEE_NAME_KEY);cloudPasscode='';cloudRole='';employeeName='';cloudReady=false;pendingEmployeeState=null;document.body.classList.remove('employee-mode');document.getElementById('cloudPasscodeInput').value='';document.getElementById('loginFields').style.display='none';document.getElementById('employeeNameBox').classList.remove('show');document.getElementById('cloudOverlay').classList.remove('hidden');document.getElementById('cloudIntro').textContent='Choose how you want to enter the workflow.';setCloudStatus('','Cloud locked');};
+
+async function pollCloudState(){
+  if(!cloudReady||!cloudPasscode||cloudSaveInFlight||cloudSaveQueued) return;
+  try{
+    const fn=isEmployee()?'get_employee_audio_workflow_state':'get_audio_workflow_state';
+    const state=await cloudRpc(fn,{p_slug:CLOUD_WORKSPACE,p_passcode:cloudPasscode});
+    const remoteUpdated=String(state?._updated_at||'');
+    if(remoteUpdated && cloudUpdatedAt && remoteUpdated!==cloudUpdatedAt){
+      if(state&&Array.isArray(state.work)) data=state.work;
+      if(state&&Array.isArray(state.clients)) clients=state.clients;
+      if(state&&state.monthLocks&&typeof state.monthLocks==='object') monthLocks=state.monthLocks;
+      cloudUpdatedAt=remoteUpdated;
+      localPersist();
+      render();
+      setCloudStatus('saved',isEmployee()?`Employee • ${employeeName||'Staff'} • Synced`:'Admin • Synced');
+    }else if(remoteUpdated && !cloudUpdatedAt) cloudUpdatedAt=remoteUpdated;
+  }catch(e){console.warn('Sync check failed',e);}
+}
 
 updateLiveTimes();
 setInterval(updateLiveTimes, 1000);
+setInterval(pollCloudState, 3000);
 render();
-if(cloudPasscode){document.getElementById('cloudPasscodeInput').value=cloudPasscode;unlockCloud(cloudPasscode);}else{setCloudStatus('','Cloud locked');}
+if(cloudPasscode&&cloudRole){
+  document.getElementById('cloudPasscodeInput').value=cloudPasscode;
+  if(cloudRole==='employee' && employeeName) unlockCloud(cloudPasscode,'employee');
+  else if(cloudRole==='admin') unlockCloud(cloudPasscode,'admin');
+  else setCloudStatus('','Cloud locked');
+}else{setCloudStatus('','Cloud locked');}
+
 </script>
 <div class="copy-toast" id="copyToast">Link copied</div>
 </body>
