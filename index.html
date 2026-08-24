@@ -183,7 +183,7 @@
   .modal-wrap.show{display:flex}
   .modal{background:var(--panel);width:min(850px,100%);max-height:92vh;overflow:auto;border-radius:7px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.45)}
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
-  .modal-head h2{margin:0;font-size:22px}
+  .modal-head h2{margin:0;font-size:22px}.modal-title-wrap{display:flex;align-items:center;gap:14px;min-width:0}.last-edited-head{font-size:12px;color:#aeb4bf;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px}
   .form{padding:20px;display:grid;gap:14px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:7px}
   .value-row{align-items:start}
@@ -443,7 +443,7 @@
 
 <div class="modal-wrap" id="modalWrap">
   <div class="modal">
-    <div class="modal-head"><h2 id="modalTitle">Add Work</h2><button class="icon-btn" id="closeModal">✕</button></div>
+    <div class="modal-head"><div class="modal-title-wrap"><h2 id="modalTitle">Add Work</h2><span class="last-edited-head" id="lastEditedHead" style="display:none"></span></div><button class="icon-btn" id="closeModal">✕</button></div>
     <form class="form" id="workForm">
       <input type="hidden" id="editId" />
       <div class="grid2">
@@ -1133,7 +1133,6 @@ function cardHtml(x){
       <span class="pill ${x.priority.toLowerCase()}">${esc(x.priority)}</span>
       ${isAdmin()&&x.payment?`<span class="pill">${esc(x.payment)}</span>`:''}
       ${x.assigned?`<span class="pill">👤 ${esc(x.assigned)}</span>`:''}
-      ${x.lastEditedBy?`<span class="pill" title="Last edited">✎ ${esc(x.lastEditedBy)}</span>`:''}
       ${(x.images||[]).length?`<span class="pill">🖼️ ${(x.images||[]).length}</span>`:''}
     </div>
     ${thumbs?`<div class="thumbs">${thumbs}</div>`:''}
@@ -1225,6 +1224,7 @@ function setAddModeUI(isEdit){
 function openNew(){
   if(!ensureUnlocked('add work')) return;
   $('modalTitle').textContent='Add Work';
+  if($('lastEditedHead')){ $('lastEditedHead').textContent=''; $('lastEditedHead').style.display='none'; }
   $('editId').value='';
   refreshClientOptions(preferredClient || '');
   $('client').value=preferredClient || $('client').value || ''; 
@@ -1256,6 +1256,7 @@ function openEdit(id){
   const x=data.find(x=>x.id===id); if(!x) return;
   playCardMoveSound();
   $('modalTitle').textContent='Edit Work';
+  if($('lastEditedHead')){ $('lastEditedHead').textContent=x.lastEditedBy?`(Last Edited by ${x.lastEditedBy})`:''; $('lastEditedHead').style.display=x.lastEditedBy?'inline':'none'; }
   $('editId').value=x.id;
   refreshClientOptions(x.client);
   $('client').value=x.client;
