@@ -179,6 +179,22 @@
   .client-crown{position:absolute;top:14px;right:14px;font-size:22px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.28));user-select:none}
   .client-card h3{margin:0 0 6px}.client-card p{margin:6px 0;color:#c2c6cf;font-size:13px}
   .client-card .big{font-size:18px;font-weight:900;color:white}
+  .client-card{cursor:pointer;transition:border-color .14s ease,transform .14s ease,background .14s ease}
+  .client-card:hover{border-color:#5b6472;background:#242424;transform:translateY(-1px)}
+  .client-detail-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+  .client-detail-stat{background:#202227;border:1px solid var(--line);border-radius:7px;padding:11px}
+  .client-detail-stat .k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#8f98a6;font-weight:900}
+  .client-detail-stat .v{font-size:18px;color:#fff;font-weight:900;margin-top:5px}
+  .client-asset-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:10px}
+  .client-asset-chip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1d1f24;border:1px solid var(--line);border-radius:7px;padding:9px 10px;font-size:12px}
+  .client-asset-chip b{color:#f3f4f6}.client-asset-chip span{color:#86efac;font-weight:900}
+  .client-detail-section{padding:16px 20px;border-top:1px solid var(--line)}
+  .client-detail-section h3{margin:0 0 8px;font-size:14px;color:#dce3ed}
+  .client-work-table{width:100%;border-collapse:collapse;min-width:720px}
+  .client-work-table th,.client-work-table td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}
+  .client-work-table th{color:#9fa7b3;background:#24262d;position:sticky;top:0}
+  .client-detail-scroll{overflow:auto;max-height:340px;border:1px solid var(--line);border-radius:7px}
+  .invoice-copy{margin-left:auto}
   .modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
   .modal-wrap.show{display:flex}
   .modal{background:var(--panel);width:min(850px,100%);max-height:92vh;overflow:auto;border-radius:7px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.45)}
@@ -537,6 +553,24 @@
         <button type="button" class="secondary" id="cancelExportBtn">Cancel</button>
         <button type="button" class="primary" id="exportExcelBtn" class="finance-only">Export Excel Report</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-wrap" id="clientDetailModalWrap">
+  <div class="modal" style="max-width:980px">
+    <div class="modal-head">
+      <div class="modal-title-wrap"><h2 id="clientDetailTitle">Client Details</h2><span class="last-edited-head" id="clientDetailMonth"></span></div>
+      <button class="icon-btn" id="closeClientDetailModal">✕</button>
+    </div>
+    <div class="client-detail-section">
+      <div class="client-detail-summary" id="clientDetailSummary"></div>
+      <div style="display:flex;align-items:center;gap:10px"><h3 style="margin:0">Asset Summary</h3><button type="button" class="secondary invoice-copy finance-only" id="copyInvoiceSummaryBtn">Copy Invoice Summary</button></div>
+      <div class="client-asset-grid" id="clientAssetSummary"></div>
+    </div>
+    <div class="client-detail-section">
+      <h3>Work Breakdown</h3>
+      <div class="client-detail-scroll" id="clientWorkBreakdown"></div>
     </div>
   </div>
 </div>
@@ -1156,13 +1190,86 @@ function renderClients(){
   data.forEach(x=>{map[x.client]??=[];map[x.client].push(x)});
   const names=[...new Set([...clients.map(c=>c.name), ...Object.keys(map)])].filter(Boolean).sort((a,b)=>a.localeCompare(b));
   if(isEmployee()){
-    $('viewRoot').innerHTML=`<div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,clientMeta=clients.find(c=>c.name===n);return `<div class="client-card"><h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||'<div class="empty">No clients yet</div>'}</div>`;
+    $('viewRoot').innerHTML=`<div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,clientMeta=clients.find(c=>c.name===n);return `<div class="client-card" data-client="${esc(n)}"><h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||'<div class="empty">No clients yet</div>'}</div>`;
+    document.querySelectorAll('.client-card[data-client]').forEach(card=>card.onclick=()=>openClientDetails(card.dataset.client));
     return;
   }
   const totalsByClient=Object.fromEntries(names.map(n=>[n,(map[n]||[]).reduce((s,x)=>s+usdValue(x),0)]));
   const topFive=new Set([...names].sort((a,b)=>totalsByClient[b]-totalsByClient[a]).slice(0,5));
-  $('viewRoot').innerHTML=`<div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,total=totalsByClient[n],out=arr.filter(x=>x.payment!=='Paid').reduce((s,x)=>s+usdValue(x),0), clientMeta=clients.find(c=>c.name===n);return `<div class="client-card">${topFive.has(n)?'<span class="client-crown" title="Top 5 client">👑</span>':''}<h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>Total value</p><div class="big">${money(total)}</div><p>Outstanding: <b>${money(out)}</b></p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||'<div class="empty">No clients yet</div>'}</div>`;
+  $('viewRoot').innerHTML=`<div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,total=totalsByClient[n],out=arr.filter(x=>x.payment!=='Paid').reduce((s,x)=>s+usdValue(x),0), clientMeta=clients.find(c=>c.name===n);return `<div class="client-card" data-client="${esc(n)}">${topFive.has(n)?'<span class="client-crown" title="Top 5 client">👑</span>':''}<h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>Total value</p><div class="big">${money(total)}</div><p>Outstanding: <b>${money(out)}</b></p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||'<div class="empty">No clients yet</div>'}</div>`;
+  document.querySelectorAll('.client-card[data-client]').forEach(card=>card.onclick=()=>openClientDetails(card.dataset.client));
 }
+
+function clientMonthItems(clientName){
+  return data.filter(x=>x.client===clientName && x.workMonth===currentMonth);
+}
+function summarizeClientAssets(items){
+  const counts={};
+  for(const x of items){
+    const ac=x.assetCounts||{};
+    for(const [name,count] of Object.entries(ac)){
+      const n=Number(count||0);
+      if(n>0) counts[name]=(counts[name]||0)+n;
+    }
+  }
+  return counts;
+}
+function assetRate(name){
+  const row=ASSET_PRICES.find(([n])=>n===name);
+  return row?Number(row[1]||0):0;
+}
+function clientInvoiceText(clientName,items,counts){
+  const lines=[`${clientName} — ${monthText(currentMonth)}`,''];
+  const entries=Object.entries(counts).filter(([,c])=>Number(c)>0);
+  if(entries.length){
+    lines.push('Assets:');
+    entries.forEach(([name,count])=>{
+      const rate=assetRate(name); const total=rate*Number(count||0);
+      lines.push(`${name} × ${count}${rate?` @ $${rate} = ${money(total)}`:''}`);
+    });
+  } else lines.push('Assets: No priced assets recorded');
+  const assetTotal=items.reduce((sum,x)=>sum+assetUsdSubtotal(x.assetCounts||{}),0);
+  const total=items.reduce((sum,x)=>sum+usdValue(x),0);
+  const manualOther=Math.max(0,total-assetTotal);
+  lines.push('',`Asset subtotal: ${money(assetTotal)}`);
+  if(manualOther>0) lines.push(`Manual / other value: ${money(manualOther)}`);
+  lines.push(`Total: ${money(total)}`);
+  lines.push('', 'Projects:');
+  items.forEach(x=>lines.push(`• ${x.title||'Untitled'} — ${x.producer||'—'} — ${x.status||'—'} — ${money(usdValue(x))}`));
+  return lines.join('\n');
+}
+function openClientDetails(clientName){
+  const items=clientMonthItems(clientName);
+  const counts=summarizeClientAssets(items);
+  const active=items.filter(x=>x.status!=='Completed').length;
+  const completed=items.filter(x=>x.status==='Completed').length;
+  const total=items.reduce((sum,x)=>sum+usdValue(x),0);
+  const outstanding=items.filter(x=>x.payment!=='Paid').reduce((sum,x)=>sum+usdValue(x),0);
+  $('clientDetailTitle').textContent=clientName;
+  $('clientDetailMonth').textContent=monthText(currentMonth);
+  const stats=[['Work Items',items.length],['Active',active],['Completed',completed]];
+  if(isAdmin()){stats.push(['Total Value',money(total)],['Outstanding',money(outstanding)]);}
+  $('clientDetailSummary').innerHTML=stats.map(([k,v])=>`<div class="client-detail-stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
+  const entries=Object.entries(counts).filter(([,c])=>Number(c)>0).sort((a,b)=>a[0].localeCompare(b[0]));
+  $('clientAssetSummary').innerHTML=entries.length?entries.map(([name,count])=>{
+    const rate=assetRate(name), totalLine=rate*Number(count||0);
+    return `<div class="client-asset-chip"><b>${esc(name)}</b><span>×${count}${isAdmin()&&rate?` · ${money(totalLine)}`:''}</span></div>`;
+  }).join(''):'<div class="empty" style="grid-column:1/-1;padding:14px">No priced assets recorded for this client in this month.</div>';
+  const head=isAdmin()?'<tr><th>Project</th><th>Producer</th><th>Status</th><th>Assets</th><th>Payment</th><th>Value</th></tr>':'<tr><th>Project</th><th>Producer</th><th>Status</th><th>Assets</th></tr>';
+  const rows=items.map(x=>{
+    const assetText=Object.entries(x.assetCounts||{}).filter(([,c])=>Number(c)>0).map(([n,c])=>`${esc(n)} ×${Number(c)}`).join('<br>')||'—';
+    return isAdmin()?`<tr><td><b>${esc(x.title||'—')}</b></td><td>${esc(x.producer||'—')}</td><td>${esc(x.status||'—')}</td><td>${assetText}</td><td>${esc(x.payment||'—')}</td><td><b>${money(usdValue(x))}</b></td></tr>`:`<tr><td><b>${esc(x.title||'—')}</b></td><td>${esc(x.producer||'—')}</td><td>${esc(x.status||'—')}</td><td>${assetText}</td></tr>`;
+  }).join('');
+  $('clientWorkBreakdown').innerHTML=`<table class="client-work-table"><thead>${head}</thead><tbody>${rows||`<tr><td colspan="6" class="empty">No work for ${esc(clientName)} in ${esc(monthText(currentMonth))}</td></tr>`}</tbody></table>`;
+  if($('copyInvoiceSummaryBtn')) $('copyInvoiceSummaryBtn').style.display=isAdmin()?'inline-flex':'none';
+  $('copyInvoiceSummaryBtn').onclick=async()=>{
+    const text=clientInvoiceText(clientName,items,counts);
+    try{await navigator.clipboard.writeText(text);}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
+    showCopyToast('Invoice summary copied');
+  };
+  $('clientDetailModalWrap').classList.add('show');
+}
+function closeClientDetails(){ $('clientDetailModalWrap').classList.remove('show'); }
 
 function toggleRankMenu(id){
   openRankMenuId = openRankMenuId===id ? null : id;
@@ -1392,6 +1499,7 @@ $('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new 
 $('sideAddClient').onclick=()=>{openClientModal();document.body.classList.remove('mobile-sidebar-open');};
 $('workAddClient').onclick=openClientModal;
 $('closeClientModal').onclick=closeClientModal;
+$('closeClientDetailModal').onclick=closeClientDetails; $('clientDetailModalWrap').onclick=e=>{if(e.target===$('clientDetailModalWrap')) closeClientDetails();};
 $('cancelClientBtn').onclick=closeClientModal;
 $('clientModalWrap').onclick=e=>{ if(e.target===$('clientModalWrap')) closeClientModal(); };
 $('clientForm').onsubmit=e=>{ e.preventDefault(); const name=$('clientNameOnly').value.trim(); if(!name) return; const savedName=addClientByName(name, $('clientNote').value); refreshClientOptions(savedName); closeClientModal(); };
