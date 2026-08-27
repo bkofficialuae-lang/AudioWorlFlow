@@ -569,7 +569,7 @@
       <div class="client-asset-grid" id="clientAssetSummary"></div>
     </div>
     <div class="client-detail-section">
-      <h3>Work Breakdown</h3>
+      <h3>Project Summary <span style="color:#8f98a8;font-size:12px;font-weight:700">(same project names merged)</span></h3>
       <div class="client-detail-scroll" id="clientWorkBreakdown"></div>
     </div>
   </div>
@@ -1237,7 +1237,7 @@ function clientInvoiceText(clientName,items,counts){
   lines.push('', 'Projects:');
   const grouped=new Map();
   items.forEach(x=>{
-    const key=(x.title||'Untitled').trim().toLowerCase();
+    const key=normalizeProjectKey(x.title);
     if(!grouped.has(key)) grouped.set(key,{title:x.title||'Untitled',value:0,assets:{}});
     const g=grouped.get(key); g.value+=usdValue(x);
     Object.entries(x.assetCounts||{}).forEach(([n,c])=>{const num=Number(c)||0;if(num>0)g.assets[n]=(g.assets[n]||0)+num;});
@@ -1247,6 +1247,13 @@ function clientInvoiceText(clientName,items,counts){
     lines.push(`• ${g.title} — ${assetText} — ${money(g.value)}`);
   });
   return lines.join('\n');
+}
+function normalizeProjectKey(title){
+  return String(title||'Untitled')
+    .normalize('NFKC')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toLowerCase();
 }
 function openClientDetails(clientName){
   const items=clientMonthItems(clientName);
@@ -1268,7 +1275,7 @@ function openClientDetails(clientName){
   const head=isAdmin()?'<tr><th>Project</th><th>Producer</th><th>Status</th><th>Assets</th><th>Payment</th><th>Value</th></tr>':'<tr><th>Project</th><th>Producer</th><th>Status</th><th>Assets</th></tr>';
   const groupedProjects=new Map();
   items.forEach(x=>{
-    const key=(x.title||'Untitled').trim().toLowerCase();
+    const key=normalizeProjectKey(x.title);
     if(!groupedProjects.has(key)) groupedProjects.set(key,{title:x.title||'Untitled',items:[],assetCounts:{},producers:new Set(),statuses:new Set(),payments:new Set(),value:0});
     const g=groupedProjects.get(key);
     g.items.push(x);
@@ -1279,11 +1286,11 @@ function openClientDetails(clientName){
     Object.entries(x.assetCounts||{}).forEach(([n,c])=>{const num=Number(c)||0;if(num>0)g.assetCounts[n]=(g.assetCounts[n]||0)+num;});
   });
   const rows=[...groupedProjects.values()].sort((a,b)=>a.title.localeCompare(b.title)).map(g=>{
-    const assetText=Object.entries(g.assetCounts).filter(([,c])=>Number(c)>0).sort((a,b)=>a[0].localeCompare(b[0])).map(([n,c])=>`${esc(n)} ×${Number(c)}`).join('<br>')||'—';
+    const assetText=Object.entries(g.assetCounts).filter(([,c])=>Number(c)>0).sort((a,b)=>a[0].localeCompare(b[0])).map(([n,c])=>`<span style="display:inline-block;margin:1px 8px 1px 0">${esc(n)} <b style="color:#86efac">×${Number(c)}</b></span>`).join('')||'—';
     const producerText=[...g.producers].join(', ')||'—';
     const statusText=g.statuses.size===1?[...g.statuses][0]:`${g.items.filter(x=>x.status==='Completed').length}/${g.items.length} Completed`;
     const paymentText=g.payments.size===1?[...g.payments][0]:'Mixed';
-    const projectLabel=g.items.length>1?`${esc(g.title)} <span style="color:#8f98a8;font-size:12px;font-weight:700">(${g.items.length} entries)</span>`:esc(g.title);
+    const projectLabel=g.items.length>1?`${esc(g.title)} <span style="color:#8f98a8;font-size:12px;font-weight:700">(${g.items.length} merged)</span>`:esc(g.title);
     return isAdmin()?`<tr><td><b>${projectLabel}</b></td><td>${esc(producerText)}</td><td>${esc(statusText)}</td><td><b>${assetText}</b></td><td>${esc(paymentText)}</td><td><b>${money(g.value)}</b></td></tr>`:`<tr><td><b>${projectLabel}</b></td><td>${esc(producerText)}</td><td>${esc(statusText)}</td><td><b>${assetText}</b></td></tr>`;
   }).join('');
   $('clientWorkBreakdown').innerHTML=`<table class="client-work-table"><thead>${head}</thead><tbody>${rows||`<tr><td colspan="6" class="empty">No work for ${esc(clientName)} in ${esc(monthText(currentMonth))}</td></tr>`}</tbody></table>`;
