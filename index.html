@@ -1129,10 +1129,21 @@ function renderView(){
 }
 
 function renderBoard(){
+  // Preserve each Kanban column's vertical scroll position across re-renders.
+  // This is especially important when opening/changing the card counter (+ / number).
+  const savedScroll={};
+  document.querySelectorAll('#viewRoot .column[data-col]').forEach(col=>{
+    const cards=col.querySelector('.cards');
+    if(cards) savedScroll[col.dataset.col]=cards.scrollTop;
+  });
   const cols=['To Do','In Progress','Waiting / Client Review','Completed'];
   const classMap={'To Do':'todo','In Progress':'progress','Waiting / Client Review':'waiting','Completed':'completed'};
   const items=filtered();
   $('viewRoot').innerHTML=`<div class="board ${compactCards?'compact-cards':''}">${cols.map(c=>`<div class="column ${classMap[c]}" data-col="${esc(c)}"><h3>${esc(c)} · ${items.filter(x=>x.status===c).length}${isCurrentMonthLocked()?'<span class="locked-note" title="Month locked">🔒</span>':''}</h3><div class="cards">${items.filter(x=>x.status===c).map(cardHtml).join('')||'<div class="empty">Drop work here</div>'}</div></div>`).join('')}</div>`;
+  document.querySelectorAll('#viewRoot .column[data-col]').forEach(col=>{
+    const cards=col.querySelector('.cards');
+    if(cards && Object.prototype.hasOwnProperty.call(savedScroll,col.dataset.col)) cards.scrollTop=savedScroll[col.dataset.col];
+  });
   document.querySelectorAll('.card').forEach(el=>{el.addEventListener('dragstart',e=>{if(isCurrentMonthLocked()){e.preventDefault();draggedId=null;return;}draggedId=el.dataset.id;});el.addEventListener('dblclick',e=>{ if(e.target.closest('.card-actions')||isCurrentMonthLocked()) return; openEdit(el.dataset.id); });});
   document.querySelectorAll('.complete-btn').forEach(btn=>btn.addEventListener('click', e=>{e.stopPropagation();toggleComplete(btn.dataset.id);}));
   document.querySelectorAll('.duplicate-btn').forEach(btn=>btn.addEventListener('click', e=>{e.stopPropagation();duplicateCard(btn.dataset.id);}));
