@@ -87,6 +87,21 @@
   .report-summary{background:#202227;border:1px solid var(--line);border-radius:8px;padding:12px;color:#cfd5df;font-size:13px;line-height:1.5}
   .primary{border:0;background:var(--blue);color:white;padding:12px 16px;border-radius:8px;font-weight:900}
   .top-right-cluster{display:flex;align-items:flex-start;gap:10px;margin-left:auto}
+  .payment-bell-wrap{position:relative;align-self:flex-start}
+  .payment-bell{width:42px;height:42px;border:1px solid var(--line);background:#1d1f24;color:#d9dee7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:19px;position:relative}
+  .payment-bell:hover{background:#292c33;border-color:#5b6472}
+  .payment-bell-badge{position:absolute;right:-4px;top:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#ef4444;color:white;font-size:10px;font-weight:900;display:none;align-items:center;justify-content:center;border:2px solid #121212}
+  .payment-bell-badge.show{display:flex}
+  .payment-notify-panel{position:absolute;right:0;top:50px;width:360px;max-height:420px;overflow:auto;background:#1b1d22;border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.45);padding:10px;z-index:1500;display:none}
+  .payment-notify-panel.show{display:block}
+  .payment-notify-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 6px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-weight:900}
+  .payment-notify-item{padding:10px;border:1px solid rgba(255,255,255,.07);background:#23262d;border-radius:8px;margin-top:8px}
+  .payment-notify-item.due{border-color:rgba(239,68,68,.55);background:#2a2023}
+  .payment-notify-item .pn-title{font-size:13px;font-weight:900;color:#fff}
+  .payment-notify-item .pn-sub{font-size:11px;color:#b9c1cc;margin-top:4px;line-height:1.35}
+  .payment-notify-item .pn-time{font-size:11px;font-weight:900;margin-top:6px;color:#86efac}
+  .payment-notify-item.due .pn-time{color:#fda4af}
+  .payment-notify-empty{padding:18px 10px;color:#aeb4bf;text-align:center;font-size:12px}
   .top-actions{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:148px;max-width:170px}
   .top-actions .primary{width:100%}
   .top-actions .lock-btn{width:52px;height:36px;align-self:flex-end;padding:0 8px}
@@ -278,6 +293,8 @@
     .month-label{font-size:15px;min-width:0;white-space:nowrap}
     .year-select{height:36px;min-width:74px;padding:0 8px;font-size:14px}
     .top-right-cluster{width:100%;display:grid;grid-template-columns:1fr;margin-top:10px;gap:8px}
+    .payment-bell-wrap{justify-self:end}
+    .payment-notify-panel{position:fixed;left:12px;right:12px;top:78px;width:auto;max-height:65vh}
     .timezone-box{min-width:0;width:100%;padding:8px 10px}
     .timezone-box .small-title{font-size:10px;margin-bottom:3px}
     .timezone-row{font-size:10px;padding:2px 0}
@@ -397,6 +414,13 @@
         </div>
       </div>
       <div class="top-right-cluster">
+        <div class="payment-bell-wrap finance-only" id="paymentBellWrap">
+          <button type="button" class="payment-bell" id="paymentBell" title="Payment reminders" aria-label="Payment reminders">🔔<span class="payment-bell-badge" id="paymentBellBadge"></span></button>
+          <div class="payment-notify-panel" id="paymentNotifyPanel">
+            <div class="payment-notify-head"><span>Payment Reminders</span><span id="paymentReminderSummary"></span></div>
+            <div id="paymentNotifyList"></div>
+          </div>
+        </div>
         <div class="timezone-box" id="timezoneBox">
           <div class="small-title">Live Time</div>
           <div class="timezone-row"><span class="tz-label" id="tzSfLabel">San Francisco {PST}:</span><span class="tz-time" id="tzSfTime">--:--</span></div>
@@ -503,6 +527,10 @@
       <div class="grid2">
         <div class="field finance-only"><label>Payment Status</label><select id="payment"><option>Not Invoiced</option><option>Invoice Sent</option><option>Partial Payment</option><option>Paid</option></select></div>
         <div class="field"><label>Mark Completed</label><label style="display:flex;align-items:center;gap:10px;background:var(--bg-2);border:1px solid var(--line);padding:12px;border-radius:7px"><input id="completedTick" type="checkbox" style="width:18px;height:18px"> <span class="helper" style="font-size:14px;color:var(--text)">Tick this if the work is completed</span></label></div>
+      </div>
+      <div class="grid2 finance-only">
+        <div class="field"><label>Payment Date</label><input id="paymentReminderDate" type="date" /><div class="helper">Set when you expect or need to check the payment.</div></div>
+        <div class="field"><label>Payment Time</label><input id="paymentReminderTime" type="time" /></div>
       </div>
       <div class="field"><label>Reference Link</label><input id="referenceLink" type="url" placeholder="https://..." /></div>
       <div class="field"><label>Notes</label><textarea id="notes" placeholder="Any important details, revisions, mix notes, delivery notes..."></textarea></div>
@@ -1089,8 +1117,37 @@ function updateCardSizeButton(){
   btn.classList.toggle('active', compactCards);
 }
 
+function paymentReminderDateTime(x){
+  if(!x || !x.paymentReminderDate) return null;
+  const t=x.paymentReminderTime||'09:00';
+  const d=new Date(`${x.paymentReminderDate}T${t}:00`);
+  return Number.isNaN(d.getTime())?null:d;
+}
+function paymentReminderLabel(dt){
+  if(!dt) return '';
+  return dt.toLocaleString([], {day:'2-digit',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function getPaymentReminders(){
+  if(!isAdmin()) return [];
+  const now=new Date();
+  return data.filter(x=>x.paymentReminderDate && x.payment!=='Paid').map(x=>({x,dt:paymentReminderDateTime(x)})).filter(r=>r.dt).sort((a,b)=>a.dt-b.dt).map(r=>({...r,due:r.dt<=now}));
+}
+function updatePaymentNotifications(){
+  const wrap=$('paymentBellWrap'); if(!wrap) return;
+  if(!isAdmin()){wrap.style.display='none';return;} else wrap.style.display='block';
+  const reminders=getPaymentReminders();
+  const due=reminders.filter(r=>r.due);
+  const badge=$('paymentBellBadge');
+  if(badge){badge.textContent=String(due.length);badge.classList.toggle('show',due.length>0);}
+  const summary=$('paymentReminderSummary'); if(summary) summary.textContent=due.length?`${due.length} due`:reminders.length?`${reminders.length} scheduled`:'';
+  const list=$('paymentNotifyList'); if(!list) return;
+  if(!reminders.length){list.innerHTML='<div class="payment-notify-empty">No payment reminders set.</div>';return;}
+  list.innerHTML=reminders.map(({x,dt,due})=>`<div class="payment-notify-item ${due?'due':''}" data-payment-card="${esc(x.id)}"><div class="pn-title">${esc(x.client)} — ${esc(x.title)}</div><div class="pn-sub">${x.producer?`Producer: ${esc(x.producer)}`:''}${x.payment?` • ${esc(x.payment)}`:''}</div><div class="pn-time">${due?'⚠ Payment time reached':'Upcoming'} • ${esc(paymentReminderLabel(dt))}</div></div>`).join('');
+  document.querySelectorAll('[data-payment-card]').forEach(el=>el.onclick=()=>{const id=el.dataset.paymentCard;$('paymentNotifyPanel')?.classList.remove('show');openEdit(id);});
+}
 function render(){
   updateCardSizeButton();
+  updatePaymentNotifications();
   renderYearSelectors();
   updateMonthLockUI();
   $('monthLabel').textContent=monthText(currentMonth);
@@ -1393,6 +1450,8 @@ function openNew(){
   renderAssetBuilder();
   updateValuePreview();
   $('payment').value='Not Invoiced';
+  if($('paymentReminderDate')) $('paymentReminderDate').value='';
+  if($('paymentReminderTime')) $('paymentReminderTime').value='';
   $('completedTick').checked=false;
   $('referenceLink').value='';
   $('notes').value='';
@@ -1436,6 +1495,8 @@ function openEdit(id){
     renderAssetBuilder();
     updateValuePreview();
     $('payment').value=x.payment||'Not Invoiced';
+    if($('paymentReminderDate')) $('paymentReminderDate').value=x.paymentReminderDate||'';
+    if($('paymentReminderTime')) $('paymentReminderTime').value=x.paymentReminderTime||'';
   }
   $('completedTick').checked=(x.status==='Completed');
   $('referenceLink').value=x.referenceLink||'';
@@ -1492,7 +1553,9 @@ $('workForm').onsubmit=e=>{
       valueType:'USD',
       value:Number(computedProjectTotalUsd().toFixed(2)),
       assetCounts:JSON.parse(JSON.stringify(tempAssetCounts)),
-      payment:$('payment').value
+      payment:$('payment').value,
+      paymentReminderDate:$('paymentReminderDate')?.value||'',
+      paymentReminderTime:$('paymentReminderTime')?.value||''
     }:{}),
     referenceLink:$('referenceLink').value.trim(),
     notes:$('notes').value.trim(),
@@ -1513,6 +1576,9 @@ $('yearSelect').onchange=()=>{const month=currentMonth.slice(5,7);currentMonth=`
 $('toggleMonthLock').onclick=()=>{const locked=isCurrentMonthLocked();if(locked){monthLocks[currentMonth]=false;}else{if(!confirm(`Lock ${monthText(currentMonth)}? Cards in this month will not be editable until you unlock it.`))return;monthLocks[currentMonth]=true;}playIncomeHideSound();saveLocks();render();};
 $('toggleCardSize').onclick=()=>{compactCards=!compactCards;playShrinkToggleSound();updateCardSizeButton();if(currentView==='board'){renderBoard();requestAnimationFrame(()=>{document.querySelectorAll('.card').forEach(card=>{card.classList.add('quick-shake');setTimeout(()=>card.classList.remove('quick-shake'),260);});});}};
 $('closeModal').onclick=closeModal; $('cancelBtn').onclick=closeModal; $('modalWrap').onclick=e=>{if(e.target===$('modalWrap')) closeModal();};
+if($('paymentBell')) $('paymentBell').onclick=e=>{e.stopPropagation();updatePaymentNotifications();$('paymentNotifyPanel')?.classList.toggle('show');};
+document.addEventListener('click',e=>{if(!e.target.closest?.('#paymentBellWrap')) $('paymentNotifyPanel')?.classList.remove('show');});
+setInterval(()=>{if(isAdmin()) updatePaymentNotifications();},30000);
 const workflowSearch=$('search');
 function clearWorkflowSearch(){
   if(!workflowSearch) return;
