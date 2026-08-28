@@ -98,6 +98,10 @@
   .payment-notify-item{padding:10px;border:1px solid rgba(255,255,255,.07);background:#23262d;border-radius:8px;margin-top:8px}
   .payment-notify-row{display:flex;align-items:flex-start;gap:8px}.payment-notify-body{flex:1;min-width:0}.payment-notify-done{width:28px;height:28px;flex:0 0 28px;border-radius:50%;border:1px solid #3f4651;background:#2a2d34;color:#8cf0aa;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;padding:0}.payment-notify-done:hover{background:#21452f;border-color:#4fc57c;color:white}
   .payment-notify-item.due{border-color:rgba(239,68,68,.55);background:#2a2023}
+  .payment-notify-item.checked{border-color:rgba(255,255,255,.07);background:#23262d;opacity:.88}
+  .payment-notify-item.checked .pn-time{color:#aeb4bf}
+  .payment-notify-clear{width:100%;margin-top:10px;border:1px solid #3b404a;background:#202329;color:#c8ced8;border-radius:7px;padding:8px 10px;font-size:11px;font-weight:850}
+  .payment-notify-clear:hover{background:#2b2f37;color:#fff;border-color:#59606c}
   .payment-notify-item .pn-title{font-size:13px;font-weight:900;color:#fff}
   .payment-notify-item .pn-sub{font-size:11px;color:#b9c1cc;margin-top:4px;line-height:1.35}
   .payment-notify-item .pn-time{font-size:11px;font-weight:900;margin-top:6px;color:#86efac}
@@ -420,6 +424,7 @@
           <div class="payment-notify-panel" id="paymentNotifyPanel">
             <div class="payment-notify-head"><span>Payment Reminders</span><span id="paymentReminderSummary"></span></div>
             <div id="paymentNotifyList"></div>
+            <button type="button" class="payment-notify-clear" id="clearPaymentNotifications">Clear Notifications</button>
           </div>
         </div>
         <div class="timezone-box" id="timezoneBox">
@@ -1131,7 +1136,7 @@ function paymentReminderLabel(dt){
 function getPaymentReminders(){
   if(!isAdmin()) return [];
   const now=new Date();
-  return data.filter(x=>x.paymentReminderDate && x.payment!=='Paid' && !x.paymentReminderDone).map(x=>({x,dt:paymentReminderDateTime(x)})).filter(r=>r.dt).sort((a,b)=>a.dt-b.dt).map(r=>({...r,due:r.dt<=now}));
+  return data.filter(x=>x.paymentReminderDate && x.payment!=='Paid' && !x.paymentReminderCleared).map(x=>({x,dt:paymentReminderDateTime(x)})).filter(r=>r.dt).sort((a,b)=>a.dt-b.dt).map(r=>({...r,due:r.dt<=now,checked:!!r.x.paymentReminderDone}));
 }
 function markPaymentReminderDone(id){
   const item=data.find(x=>x.id===id);
@@ -1141,17 +1146,26 @@ function markPaymentReminderDone(id){
   save();
   updatePaymentNotifications();
 }
+function clearPaymentNotifications(){
+  if(!isAdmin()) return;
+  const ids=new Set(getPaymentReminders().map(r=>r.x.id));
+  if(!ids.size) return;
+  data.forEach(x=>{if(ids.has(x.id)) x.paymentReminderCleared=true;});
+  save();
+  updatePaymentNotifications();
+}
 function updatePaymentNotifications(){
   const wrap=$('paymentBellWrap'); if(!wrap) return;
   if(!isAdmin()){wrap.style.display='none';return;} else wrap.style.display='block';
   const reminders=getPaymentReminders();
-  const due=reminders.filter(r=>r.due);
+  const due=reminders.filter(r=>r.due && !r.checked);
   const badge=$('paymentBellBadge');
   if(badge){badge.textContent=String(due.length);badge.classList.toggle('show',due.length>0);}
-  const summary=$('paymentReminderSummary'); if(summary) summary.textContent=due.length?`${due.length} due`:reminders.length?`${reminders.length} scheduled`:'';
+  const summary=$('paymentReminderSummary'); if(summary) summary.textContent=due.length?`${due.length} due`:reminders.length?`${reminders.length} reminder${reminders.length!==1?'s':''}`:'';
   const list=$('paymentNotifyList'); if(!list) return;
+  const clearBtn=$('clearPaymentNotifications'); if(clearBtn) clearBtn.style.display=reminders.length?'block':'none';
   if(!reminders.length){list.innerHTML='<div class="payment-notify-empty">No payment reminders set.</div>';return;}
-  list.innerHTML=reminders.map(({x,dt,due})=>`<div class="payment-notify-item ${due?'due':''}"><div class="payment-notify-row"><div class="payment-notify-body" data-payment-card="${esc(x.id)}"><div class="pn-title">${esc(x.client)} — ${esc(x.title)}</div><div class="pn-sub">${x.producer?`Producer: ${esc(x.producer)}`:''}${x.payment?` • ${esc(x.payment)}`:''}</div><div class="pn-time">${due?'⚠ Payment time reached':'Upcoming'} • ${esc(paymentReminderLabel(dt))}</div></div><button type="button" class="payment-notify-done" data-payment-done="${esc(x.id)}" title="Mark reminder checked" aria-label="Mark reminder checked">✓</button></div></div>`).join('');
+  list.innerHTML=reminders.map(({x,dt,due,checked})=>`<div class="payment-notify-item ${due&&!checked?'due':''} ${checked?'checked':''}"><div class="payment-notify-row"><div class="payment-notify-body" data-payment-card="${esc(x.id)}"><div class="pn-title">${esc(x.client)} — ${esc(x.title)}</div><div class="pn-sub">${x.producer?`Producer: ${esc(x.producer)}`:''}${x.payment?` • ${esc(x.payment)}`:''}</div><div class="pn-time">${checked?'✓ Checked':due?'⚠ Payment time reached':'Upcoming'} • ${esc(paymentReminderLabel(dt))}</div></div>${checked?'':`<button type="button" class="payment-notify-done" data-payment-done="${esc(x.id)}" title="Mark reminder checked" aria-label="Mark reminder checked">✓</button>`}</div></div>`).join('');
   document.querySelectorAll('[data-payment-card]').forEach(el=>el.onclick=()=>{const id=el.dataset.paymentCard;$('paymentNotifyPanel')?.classList.remove('show');openEdit(id);});
   document.querySelectorAll('[data-payment-done]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();markPaymentReminderDone(btn.dataset.paymentDone);});
 }
@@ -1566,7 +1580,8 @@ $('workForm').onsubmit=e=>{
       payment:$('payment').value,
       paymentReminderDate:$('paymentReminderDate')?.value||'',
       paymentReminderTime:$('paymentReminderTime')?.value||'',
-      paymentReminderDone: (existing.paymentReminderDate===($('paymentReminderDate')?.value||'') && existing.paymentReminderTime===($('paymentReminderTime')?.value||'')) ? !!existing.paymentReminderDone : false
+      paymentReminderDone: (existing.paymentReminderDate===($('paymentReminderDate')?.value||'') && existing.paymentReminderTime===($('paymentReminderTime')?.value||'')) ? !!existing.paymentReminderDone : false,
+      paymentReminderCleared: (existing.paymentReminderDate===($('paymentReminderDate')?.value||'') && existing.paymentReminderTime===($('paymentReminderTime')?.value||'')) ? !!existing.paymentReminderCleared : false
     }:{}),
     referenceLink:$('referenceLink').value.trim(),
     notes:$('notes').value.trim(),
@@ -1588,6 +1603,7 @@ $('toggleMonthLock').onclick=()=>{const locked=isCurrentMonthLocked();if(locked)
 $('toggleCardSize').onclick=()=>{compactCards=!compactCards;playShrinkToggleSound();updateCardSizeButton();if(currentView==='board'){renderBoard();requestAnimationFrame(()=>{document.querySelectorAll('.card').forEach(card=>{card.classList.add('quick-shake');setTimeout(()=>card.classList.remove('quick-shake'),260);});});}};
 $('closeModal').onclick=closeModal; $('cancelBtn').onclick=closeModal; $('modalWrap').onclick=e=>{if(e.target===$('modalWrap')) closeModal();};
 if($('paymentBell')) $('paymentBell').onclick=e=>{e.stopPropagation();updatePaymentNotifications();$('paymentNotifyPanel')?.classList.toggle('show');};
+if($('clearPaymentNotifications')) $('clearPaymentNotifications').onclick=e=>{e.stopPropagation();clearPaymentNotifications();};
 document.addEventListener('click',e=>{if(!e.target.closest?.('#paymentBellWrap')) $('paymentNotifyPanel')?.classList.remove('show');});
 setInterval(()=>{if(isAdmin()) updatePaymentNotifications();},30000);
 const workflowSearch=$('search');
