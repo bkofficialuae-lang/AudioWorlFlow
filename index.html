@@ -88,7 +88,7 @@
   .primary{border:0;background:var(--blue);color:white;padding:12px 16px;border-radius:8px;font-weight:900}
   .top-right-cluster{display:flex;align-items:flex-start;gap:10px;margin-left:auto}
   .payment-bell-wrap{position:relative;align-self:flex-start}
-  .payment-bell{width:42px;height:42px;border:1px solid var(--line);background:#1d1f24;color:#d9dee7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:19px;position:relative}
+  .payment-bell{width:36px;height:36px;border:1px solid var(--line);background:#1d1f24;color:#d9dee7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:16px;position:relative}
   .payment-bell:hover{background:#292c33;border-color:#5b6472}
   .payment-bell-badge{position:absolute;right:-4px;top:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#ef4444;color:white;font-size:10px;font-weight:900;display:none;align-items:center;justify-content:center;border:2px solid #121212}
   .payment-bell-badge.show{display:flex}
@@ -96,6 +96,7 @@
   .payment-notify-panel.show{display:block}
   .payment-notify-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 6px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-weight:900}
   .payment-notify-item{padding:10px;border:1px solid rgba(255,255,255,.07);background:#23262d;border-radius:8px;margin-top:8px}
+  .payment-notify-row{display:flex;align-items:flex-start;gap:8px}.payment-notify-body{flex:1;min-width:0}.payment-notify-done{width:28px;height:28px;flex:0 0 28px;border-radius:50%;border:1px solid #3f4651;background:#2a2d34;color:#8cf0aa;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;padding:0}.payment-notify-done:hover{background:#21452f;border-color:#4fc57c;color:white}
   .payment-notify-item.due{border-color:rgba(239,68,68,.55);background:#2a2023}
   .payment-notify-item .pn-title{font-size:13px;font-weight:900;color:#fff}
   .payment-notify-item .pn-sub{font-size:11px;color:#b9c1cc;margin-top:4px;line-height:1.35}
@@ -1130,7 +1131,15 @@ function paymentReminderLabel(dt){
 function getPaymentReminders(){
   if(!isAdmin()) return [];
   const now=new Date();
-  return data.filter(x=>x.paymentReminderDate && x.payment!=='Paid').map(x=>({x,dt:paymentReminderDateTime(x)})).filter(r=>r.dt).sort((a,b)=>a.dt-b.dt).map(r=>({...r,due:r.dt<=now}));
+  return data.filter(x=>x.paymentReminderDate && x.payment!=='Paid' && !x.paymentReminderDone).map(x=>({x,dt:paymentReminderDateTime(x)})).filter(r=>r.dt).sort((a,b)=>a.dt-b.dt).map(r=>({...r,due:r.dt<=now}));
+}
+function markPaymentReminderDone(id){
+  const item=data.find(x=>x.id===id);
+  if(!item || !isAdmin()) return;
+  item.paymentReminderDone=true;
+  stampActor(item);
+  save();
+  updatePaymentNotifications();
 }
 function updatePaymentNotifications(){
   const wrap=$('paymentBellWrap'); if(!wrap) return;
@@ -1142,8 +1151,9 @@ function updatePaymentNotifications(){
   const summary=$('paymentReminderSummary'); if(summary) summary.textContent=due.length?`${due.length} due`:reminders.length?`${reminders.length} scheduled`:'';
   const list=$('paymentNotifyList'); if(!list) return;
   if(!reminders.length){list.innerHTML='<div class="payment-notify-empty">No payment reminders set.</div>';return;}
-  list.innerHTML=reminders.map(({x,dt,due})=>`<div class="payment-notify-item ${due?'due':''}" data-payment-card="${esc(x.id)}"><div class="pn-title">${esc(x.client)} — ${esc(x.title)}</div><div class="pn-sub">${x.producer?`Producer: ${esc(x.producer)}`:''}${x.payment?` • ${esc(x.payment)}`:''}</div><div class="pn-time">${due?'⚠ Payment time reached':'Upcoming'} • ${esc(paymentReminderLabel(dt))}</div></div>`).join('');
+  list.innerHTML=reminders.map(({x,dt,due})=>`<div class="payment-notify-item ${due?'due':''}"><div class="payment-notify-row"><div class="payment-notify-body" data-payment-card="${esc(x.id)}"><div class="pn-title">${esc(x.client)} — ${esc(x.title)}</div><div class="pn-sub">${x.producer?`Producer: ${esc(x.producer)}`:''}${x.payment?` • ${esc(x.payment)}`:''}</div><div class="pn-time">${due?'⚠ Payment time reached':'Upcoming'} • ${esc(paymentReminderLabel(dt))}</div></div><button type="button" class="payment-notify-done" data-payment-done="${esc(x.id)}" title="Mark reminder checked" aria-label="Mark reminder checked">✓</button></div></div>`).join('');
   document.querySelectorAll('[data-payment-card]').forEach(el=>el.onclick=()=>{const id=el.dataset.paymentCard;$('paymentNotifyPanel')?.classList.remove('show');openEdit(id);});
+  document.querySelectorAll('[data-payment-done]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();markPaymentReminderDone(btn.dataset.paymentDone);});
 }
 function render(){
   updateCardSizeButton();
@@ -1555,7 +1565,8 @@ $('workForm').onsubmit=e=>{
       assetCounts:JSON.parse(JSON.stringify(tempAssetCounts)),
       payment:$('payment').value,
       paymentReminderDate:$('paymentReminderDate')?.value||'',
-      paymentReminderTime:$('paymentReminderTime')?.value||''
+      paymentReminderTime:$('paymentReminderTime')?.value||'',
+      paymentReminderDone: (existing.paymentReminderDate===($('paymentReminderDate')?.value||'') && existing.paymentReminderTime===($('paymentReminderTime')?.value||'')) ? !!existing.paymentReminderDone : false
     }:{}),
     referenceLink:$('referenceLink').value.trim(),
     notes:$('notes').value.trim(),
