@@ -215,6 +215,20 @@
   .client-work-table th{color:#9fa7b3;background:#24262d;position:sticky;top:0}
   .client-detail-scroll{overflow:auto;max-height:340px;border:1px solid var(--line);border-radius:7px}
   .invoice-copy{margin-left:auto}
+  .invoice-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+  .invoice-builder-table{width:100%;border-collapse:collapse;min-width:780px}
+  .invoice-builder-table th,.invoice-builder-table td{padding:8px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;vertical-align:middle}
+  .invoice-builder-table th{color:#9fa7b3;background:#24262d;position:sticky;top:0;z-index:1}
+  .invoice-builder-table input[type=text],.invoice-builder-table input[type=number]{width:100%;min-width:80px;padding:8px 9px;border-radius:6px;border:1px solid var(--line);background:#17191d;color:#fff}
+  .invoice-builder-table .invoice-check{width:18px;height:18px}
+  .invoice-line-total{color:#86efac;font-weight:900;white-space:nowrap}
+  .invoice-builder-scroll{overflow:auto;max-height:310px;border:1px solid var(--line);border-radius:8px}
+  .invoice-total-box{display:grid;grid-template-columns:1fr auto;gap:8px 18px;align-items:center;background:#202227;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px}
+  .invoice-total-box b{font-size:18px;color:#86efac}
+  .invoice-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .invoice-form-grid .span2{grid-column:1/-1}
+  .invoice-hint{font-size:11px;color:#9ca3af;margin-top:5px}
+  @media(max-width:720px){.invoice-form-grid{grid-template-columns:1fr}.invoice-form-grid .span2{grid-column:auto}.invoice-actions{width:100%;margin-left:0}.invoice-actions button{flex:1}.invoice-builder-scroll{max-height:260px}}
   .modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
   .modal-wrap.show{display:flex}
   .modal{background:var(--panel);width:min(850px,100%);max-height:92vh;overflow:auto;border-radius:7px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.45)}
@@ -599,12 +613,33 @@
     </div>
     <div class="client-detail-section">
       <div class="client-detail-summary" id="clientDetailSummary"></div>
-      <div style="display:flex;align-items:center;gap:10px"><h3 style="margin:0">Asset Summary</h3><button type="button" class="secondary invoice-copy finance-only" id="copyInvoiceSummaryBtn">Copy Invoice Summary</button></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Asset Summary</h3><div class="invoice-actions finance-only"><button type="button" class="secondary" id="copyInvoiceSummaryBtn">Copy Invoice Summary</button><button type="button" class="primary" id="generateInvoiceBtn">Generate Invoice</button></div></div>
       <div class="client-asset-grid" id="clientAssetSummary"></div>
     </div>
     <div class="client-detail-section">
       <h3>Project Summary <span style="color:#8f98a8;font-size:12px;font-weight:700">(same project names merged)</span></h3>
       <div class="client-detail-scroll" id="clientWorkBreakdown"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-wrap" id="invoiceModalWrap">
+  <div class="modal" style="max-width:980px">
+    <div class="modal-head"><div class="modal-title-wrap"><h2>Generate Invoice</h2><span class="last-edited-head" id="invoiceClientMonth"></span></div><button class="icon-btn" id="closeInvoiceModal">✕</button></div>
+    <div class="form">
+      <div class="invoice-form-grid">
+        <div class="field"><label>Invoice #</label><input id="invoiceNumber" type="number" min="1" step="1"></div>
+        <div class="field"><label>Submitted Date</label><input id="invoiceDate" type="date"></div>
+        <div class="field span2"><label>Invoice To</label><textarea id="invoiceTo" rows="3" placeholder="Client name / company / address"></textarea></div>
+        <div class="field"><label>Currency</label><select id="invoiceCurrency"><option>USD</option></select></div>
+        <div class="field"><label>Adjustments</label><input id="invoiceAdjustment" type="number" step="0.01" value="0"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px"><div><b>Invoice Line Items</b><div class="invoice-hint">⭐ is never shown on the invoice. The exact internal rate is still used.</div></div><button type="button" class="secondary" id="invoiceSelectAllBtn">Select All</button></div>
+      <div class="invoice-builder-scroll" style="margin-top:8px"><table class="invoice-builder-table"><thead><tr><th style="width:42px">Use</th><th>Project</th><th>Description</th><th style="width:90px">Qty</th><th style="width:110px">Unit Price</th><th style="width:110px">Total</th></tr></thead><tbody id="invoiceLineItems"></tbody></table></div>
+      <div class="invoice-total-box"><span>Subtotal</span><b id="invoiceSubtotal">$0</b><span>Adjustments</span><b id="invoiceAdjustmentPreview">$0</b><span>Grand Total</span><b id="invoiceGrandTotal">$0</b></div>
+      <div class="field" style="margin-top:12px"><label>Notes</label><textarea id="invoiceNotes" rows="2">Thank you for your business.</textarea></div>
+      <label style="display:flex;align-items:center;gap:9px;margin-top:10px;color:#cfd5df;font-size:12px"><input id="markInvoiceSent" type="checkbox" style="width:18px;height:18px"> Mark included work as “Invoice Sent” after generating</label>
+      <div class="actions"><button type="button" class="secondary" id="cancelInvoiceBtn">Cancel</button><button type="button" class="primary" id="downloadInvoiceBtn">Download Excel Invoice</button></div>
     </div>
   </div>
 </div>
@@ -688,7 +723,7 @@ function localPersist(){
   localStorage.setItem(LOCKS_KEY,JSON.stringify(monthLocks));
 }
 
-function currentCloudState(){return {work:data,clients,monthLocks};}
+function currentCloudState(){return {work:data,clients,monthLocks,invoiceMeta};}
 function isEmployee(){return cloudRole==='employee';}
 function isAdmin(){return cloudRole==='admin';}
 function currentActor(){return isEmployee()?(employeeName||'Employee'):'BK';}
@@ -766,12 +801,14 @@ async function finishCloudLogin(state,passcode,role){
   if(state&&Array.isArray(state.work))data=state.work;
   if(state&&Array.isArray(state.clients))clients=state.clients;
   if(state&&state.monthLocks&&typeof state.monthLocks==='object')monthLocks=state.monthLocks;
+  if(isAdmin() && state&&state.invoiceMeta&&typeof state.invoiceMeta==='object') invoiceMeta={...invoiceMeta,...state.invoiceMeta};
   cloudUpdatedAt=String(state?._updated_at||'');
   cloudReady=true;
   if(role==='admin' && (!data||data.length===0) && INITIAL_BACKUP && Array.isArray(INITIAL_BACKUP.work) && INITIAL_BACKUP.work.length){
     data=INITIAL_BACKUP.work;
     clients=Array.isArray(INITIAL_BACKUP.clients)?INITIAL_BACKUP.clients:[];
     monthLocks=(INITIAL_BACKUP.monthLocks&&typeof INITIAL_BACKUP.monthLocks==='object')?INITIAL_BACKUP.monthLocks:{};
+    invoiceMeta=(INITIAL_BACKUP.invoiceMeta&&typeof INITIAL_BACKUP.invoiceMeta==='object')?INITIAL_BACKUP.invoiceMeta:{nextNumber:18};
     localPersist();
     const ts=await cloudRpc('save_audio_workflow_state',{p_slug:CLOUD_WORKSPACE,p_passcode:cloudPasscode,p_state:currentCloudState()});
     if(ts) cloudUpdatedAt=String(ts);
@@ -814,6 +851,7 @@ let incomeVisible=false;
 let compactCards=false;
 let monthLocks=JSON.parse(localStorage.getItem(LOCKS_KEY)||'{}');
 if(!monthLocks || typeof monthLocks!=='object' || Array.isArray(monthLocks)) monthLocks={};
+let invoiceMeta={nextNumber:18};
 let openRankMenuId=null;
 const ASSET_PRICES=[
   ['SFX',10],['SFX ⭐',12],['Custom SFX',21],['Custom SFX ⭐',25],
@@ -1089,7 +1127,7 @@ function openExportModal(){
 function closeExportModal(){ $('exportModalWrap').classList.remove('show'); }
 
 function downloadFullBackup(){
-  const payload={work:data, clients, monthLocks};
+  const payload={work:data, clients, monthLocks, invoiceMeta};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bk-studio-audio-workflow-backup.json';a.click();URL.revokeObjectURL(a.href);
 }
@@ -1347,6 +1385,165 @@ function normalizeProjectKey(title){
     .trim()
     .toLowerCase();
 }
+let invoiceBuilderContext=null;
+const INVOICE_NORMAL_RATES={'SFX':10,'Custom SFX':21,'Cutscene':45,'Ambience':70,'OST':200,'OST Orchestra':300};
+const INVOICE_SPECIAL_RATES={'SFX':12,'Custom SFX':25,'Cutscene':52,'Ambience':115,'OST':230,'OST Orchestra':300};
+function cleanInvoiceAssetName(name){return String(name||'').replace(/\s*⭐\s*/g,'').trim();}
+function invoiceAssetDescription(name){
+  const n=cleanInvoiceAssetName(name);
+  if(n==='OST') return 'Soundtracks';
+  if(n==='OST Orchestra') return 'Orchestral Soundtrack';
+  if(n==='Cutscene') return 'Cutscenes';
+  return n;
+}
+function isSpecialInvoiceClient(clientName){const n=String(clientName||'').trim().toLowerCase();return n==='dobig'||n==='misfits evolution';}
+function invoiceAssetUnitRate(clientName,assetName){
+  const clean=cleanInvoiceAssetName(assetName);
+  const starred=String(assetName||'').includes('⭐');
+  if(starred && isSpecialInvoiceClient(clientName)) return Number(INVOICE_SPECIAL_RATES[clean]||INVOICE_NORMAL_RATES[clean]||0);
+  return Number(INVOICE_NORMAL_RATES[clean]||assetRate(assetName)||0);
+}
+function manualUsdPortion(x){
+  if(x?.manualValue!==undefined){const raw=Number(x.manualValue||0);return x.manualValueType==='RBX'?Math.floor(raw/280):raw;}
+  const hasAssets=Object.values(x?.assetCounts||{}).some(v=>Number(v)>0);
+  if(!hasAssets) return usdValue(x);
+  return 0;
+}
+function buildInvoiceLines(clientName,items){
+  const groups=new Map();
+  items.filter(x=>x.payment!=='Paid').forEach(x=>{
+    const project=(x.title||'Untitled').trim()||'Untitled';
+    const key=normalizeProjectKey(project);
+    if(!groups.has(key)) groups.set(key,{project,items:[],assets:{},manual:0});
+    const g=groups.get(key); g.items.push(x);
+    Object.entries(x.assetCounts||{}).forEach(([asset,count])=>{const c=Number(count)||0;if(c>0)g.assets[asset]=(g.assets[asset]||0)+c;});
+    g.manual+=manualUsdPortion(x);
+  });
+  const lines=[];
+  [...groups.values()].sort((a,b)=>a.project.localeCompare(b.project)).forEach(g=>{
+    Object.entries(g.assets).filter(([,c])=>c>0).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([asset,count])=>{
+      const rate=invoiceAssetUnitRate(clientName,asset);
+      lines.push({project:g.project,description:invoiceAssetDescription(asset),qty:Number(count),rate,sourceAsset:asset,itemIds:g.items.map(x=>x.id),selected:true});
+    });
+    if(g.manual>0){
+      lines.push({project:g.project,description:'Other / Manual Work',qty:1,rate:Number(g.manual),sourceAsset:'Manual',itemIds:g.items.map(x=>x.id),selected:true});
+    }
+  });
+  return lines;
+}
+function invoiceToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function openInvoiceBuilder(clientName){
+  if(!isAdmin()) return;
+  const client=clients.find(c=>c.name===clientName)||{name:clientName,note:''};
+  const items=clientMonthItems(clientName);
+  const lines=buildInvoiceLines(clientName,items);
+  invoiceBuilderContext={clientName,items,lines};
+  $('invoiceClientMonth').textContent=`${clientName} • ${monthText(currentMonth)}`;
+  $('invoiceNumber').value=Number(invoiceMeta.nextNumber||18);
+  $('invoiceDate').value=invoiceToday();
+  $('invoiceCurrency').value='USD';
+  $('invoiceAdjustment').value='0';
+  $('invoiceNotes').value='Thank you for your business.';
+  $('markInvoiceSent').checked=false;
+  $('invoiceTo').value=[clientName,client.note||''].filter(Boolean).join('\n');
+  renderInvoiceBuilderLines();
+  $('invoiceModalWrap').classList.add('show');
+}
+function renderInvoiceBuilderLines(){
+  if(!invoiceBuilderContext) return;
+  const body=$('invoiceLineItems');
+  body.innerHTML=invoiceBuilderContext.lines.map((l,i)=>`<tr data-invoice-line="${i}"><td><input class="invoice-check" type="checkbox" ${l.selected?'checked':''}></td><td><input class="invoice-project" type="text" value="${esc(l.project)}"></td><td><input class="invoice-desc" type="text" value="${esc(l.description)}"></td><td><input class="invoice-qty" type="number" min="0" step="1" value="${Number(l.qty)}"></td><td><input class="invoice-rate" type="number" min="0" step="0.01" value="${Number(l.rate)}"></td><td class="invoice-line-total">${money(Number(l.qty)*Number(l.rate))}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">No unpaid invoice items found for this client in this month.</td></tr>';
+  body.querySelectorAll('tr[data-invoice-line]').forEach(row=>{
+    const i=Number(row.dataset.invoiceLine), line=invoiceBuilderContext.lines[i];
+    const sync=()=>{line.selected=row.querySelector('.invoice-check').checked;line.project=row.querySelector('.invoice-project').value;line.description=row.querySelector('.invoice-desc').value;line.qty=Math.max(0,Number(row.querySelector('.invoice-qty').value)||0);line.rate=Math.max(0,Number(row.querySelector('.invoice-rate').value)||0);row.querySelector('.invoice-line-total').textContent=money(line.qty*line.rate);updateInvoiceTotals();};
+    row.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',sync));
+    row.querySelector('.invoice-check').addEventListener('change',sync);
+  });
+  updateInvoiceTotals();
+}
+function selectedInvoiceLines(){return (invoiceBuilderContext?.lines||[]).filter(l=>l.selected&&Number(l.qty)>0);}
+function updateInvoiceTotals(){
+  const subtotal=selectedInvoiceLines().reduce((s,l)=>s+Number(l.qty||0)*Number(l.rate||0),0);
+  const adj=Number($('invoiceAdjustment')?.value||0)||0;
+  $('invoiceSubtotal').textContent=money(subtotal);$('invoiceAdjustmentPreview').textContent=money(adj);$('invoiceGrandTotal').textContent=money(subtotal+adj);
+}
+function xmlCell(value,type='String',style=''){const st=style?` ss:StyleID="${style}"`:'';return `<Cell${st}><Data ss:Type="${type}">${xmlEsc(value)}</Data></Cell>`;}
+function xmlEsc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
+function generateInvoiceSpreadsheetXml(meta,lines){
+  const maxRows=Math.max(9,lines.length);
+  const itemRows=[];
+  for(let i=0;i<maxRows;i++){
+    const l=lines[i];
+    if(l){itemRows.push(`<Row ss:Height="22"><Cell ss:StyleID="Item"><Data ss:Type="String">${xmlEsc(l.project)}</Data></Cell><Cell ss:StyleID="Item"><Data ss:Type="String">${xmlEsc(l.description)}</Data></Cell><Cell ss:StyleID="Qty"><Data ss:Type="Number">${Number(l.qty)}</Data></Cell><Cell ss:StyleID="Money"><Data ss:Type="Number">${Number(l.rate)}</Data></Cell><Cell ss:StyleID="Money" ss:Formula="=RC[-2]*RC[-1]"><Data ss:Type="Number">${Number(l.qty)*Number(l.rate)}</Data></Cell></Row>`);}else itemRows.push('<Row ss:Height="22"><Cell ss:StyleID="Item"/><Cell ss:StyleID="Item"/><Cell ss:StyleID="Qty"/><Cell ss:StyleID="Money"/><Cell ss:StyleID="Money"/></Row>');
+  }
+  const subtotal=lines.reduce((s,l)=>s+Number(l.qty)*Number(l.rate),0), adj=Number(meta.adjustment||0), grand=subtotal+adj;
+  return `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n<Styles>\n<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Bottom"/><Font ss:FontName="Aptos" ss:Size="11"/><Interior/><NumberFormat/><Protection/></Style>\n<Style ss:ID="Title"><Font ss:FontName="Aptos Display" ss:Size="28" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#167DC5" ss:Pattern="Solid"/><Alignment ss:Vertical="Center"/></Style>\n<Style ss:ID="Label"><Font ss:Bold="1" ss:Color="#6B7280"/></Style>\n<Style ss:ID="Section"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#24262D" ss:Pattern="Solid"/><Alignment ss:Vertical="Center"/></Style>\n<Style ss:ID="Header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#167DC5" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D1D5DB"/></Borders></Style>\n<Style ss:ID="Item"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style>\n<Style ss:ID="Qty"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders><Alignment ss:Horizontal="Center"/></Style>\n<Style ss:ID="Money"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders><NumberFormat ss:Format="$#,##0.00"/></Style>\n<Style ss:ID="TotalLabel"><Font ss:Bold="1"/><Alignment ss:Horizontal="Right"/></Style>\n<Style ss:ID="Total"><Font ss:Bold="1" ss:Color="#167DC5"/><NumberFormat ss:Format="$#,##0.00"/></Style>\n</Styles>\n<Worksheet ss:Name="Invoice"><Table ss:ExpandedColumnCount="9" ss:ExpandedRowCount="${31+Math.max(0,maxRows-9)}" x:FullColumns="1" x:FullRows="1">\n<Column ss:Index="1" ss:Width="28"/><Column ss:Width="250"/><Column ss:Width="210"/><Column ss:Width="72"/><Column ss:Width="94"/><Column ss:Width="98"/><Column ss:Width="28"/><Column ss:Width="105"/><Column ss:Width="110"/>\n<Row ss:Height="12"/><Row ss:Height="38"><Cell ss:Index="2" ss:MergeAcross="4" ss:StyleID="Title"><Data ss:Type="String">INVOICE</Data></Cell></Row><Row ss:Height="12"/>\n<Row><Cell ss:Index="2"><Data ss:Type="String">M. Bilal A. Khan</Data></Cell></Row>\n<Row><Cell ss:Index="2"><Data ss:Type="String">BK STUDIO LLC · Abu Dhabi · UAE</Data></Cell><Cell ss:Index="8" ss:StyleID="Label"><Data ss:Type="String">Invoice #</Data></Cell><Cell><Data ss:Type="Number">${Number(meta.number)}</Data></Cell></Row>\n<Row><Cell ss:Index="2"><Data ss:Type="String">bkofficialuae@gmail.com</Data></Cell><Cell ss:Index="8" ss:StyleID="Label"><Data ss:Type="String">Submitted</Data></Cell><Cell><Data ss:Type="String">${xmlEsc(meta.date)}</Data></Cell></Row>\n<Row><Cell ss:Index="8" ss:StyleID="Label"><Data ss:Type="String">Currency</Data></Cell><Cell><Data ss:Type="String">${xmlEsc(meta.currency)}</Data></Cell></Row>\n<Row ss:Height="24"><Cell ss:Index="2" ss:MergeAcross="3" ss:StyleID="Section"><Data ss:Type="String">INVOICE TO</Data></Cell><Cell ss:Index="6" ss:MergeAcross="3" ss:StyleID="Section"><Data ss:Type="String">PAYABLE TO</Data></Cell></Row>\n<Row ss:Height="54"><Cell ss:Index="2" ss:MergeAcross="3"><Data ss:Type="String">${xmlEsc(meta.invoiceTo)}</Data></Cell><Cell ss:Index="6" ss:MergeAcross="3"><Data ss:Type="String">BK - Sound Designer / Composer\nRoblox: bk52540\nDiscord: bk222</Data></Cell></Row><Row/><Row/><Row/>\n<Row ss:Height="24"><Cell ss:Index="2" ss:StyleID="Header"><Data ss:Type="String">Project</Data></Cell><Cell ss:StyleID="Header"><Data ss:Type="String">Description</Data></Cell><Cell ss:StyleID="Header"><Data ss:Type="String">Qty / Hrs</Data></Cell><Cell ss:StyleID="Header"><Data ss:Type="String">Unit Price</Data></Cell><Cell ss:StyleID="Header"><Data ss:Type="String">Total Price</Data></Cell></Row>\n${itemRows.join('')}\n<Row/><Row ss:Height="24"><Cell ss:Index="2" ss:MergeAcross="2" ss:StyleID="Section"><Data ss:Type="String">Payment Summary</Data></Cell><Cell ss:Index="8" ss:MergeAcross="1" ss:StyleID="Section"><Data ss:Type="String">Notes</Data></Cell></Row>\n<Row><Cell ss:Index="5" ss:StyleID="TotalLabel"><Data ss:Type="String">Subtotal</Data></Cell><Cell ss:StyleID="Total"><Data ss:Type="Number">${subtotal}</Data></Cell><Cell ss:Index="8" ss:MergeAcross="1" ss:MergeDown="3"><Data ss:Type="String">${xmlEsc(meta.notes)}</Data></Cell></Row>\n<Row><Cell ss:Index="5" ss:StyleID="TotalLabel"><Data ss:Type="String">Adjustments</Data></Cell><Cell ss:StyleID="Money"><Data ss:Type="Number">${adj}</Data></Cell></Row>\n<Row><Cell ss:Index="5" ss:StyleID="TotalLabel"><Data ss:Type="String">Grand Total</Data></Cell><Cell ss:StyleID="Total"><Data ss:Type="Number">${grand}</Data></Cell></Row>\n<Row/><Row/><Row><Cell ss:Index="2" ss:MergeAcross="7"><Data ss:Type="String">BK STUDIO LLC · Abu Dhabi, UAE · bkofficialuae@gmail.com</Data></Cell></Row>\n</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><Selected/><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet></Workbook>`;
+}
+function xlsxInlineCell(ref,value,style=0){return `<c r="${ref}"${style?` s="${style}"`:''} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(value)}</t></is></c>`;}
+function xlsxNumberCell(ref,value,style=0,formula=''){return `<c r="${ref}"${style?` s="${style}"`:''}>${formula?`<f>${xmlEsc(formula)}</f>`:''}<v>${Number(value)||0}</v></c>`;}
+function xlsxRow(rowNum,cells,height=''){return `<row r="${rowNum}"${height?` ht="${height}" customHeight="1"`:''}>${cells.join('')}</row>`;}
+function crc32Bytes(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++){c^=bytes[i];for(let k=0;k<8;k++)c=(c>>>1)^((c&1)?0xedb88320:0);}return (c^0xffffffff)>>>0;}
+function zipU16(n){return new Uint8Array([n&255,(n>>>8)&255]);}
+function zipU32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255]);}
+function concatBytes(parts){const len=parts.reduce((s,p)=>s+p.length,0),out=new Uint8Array(len);let o=0;parts.forEach(p=>{out.set(p,o);o+=p.length;});return out;}
+function makeStoredZip(files){
+  const enc=new TextEncoder(),locals=[],centrals=[];let offset=0;
+  Object.entries(files).forEach(([name,content])=>{
+    const nameB=enc.encode(name),data=typeof content==='string'?enc.encode(content):content,crc=crc32Bytes(data);
+    const local=concatBytes([zipU32(0x04034b50),zipU16(20),zipU16(0),zipU16(0),zipU16(0),zipU16(0),zipU32(crc),zipU32(data.length),zipU32(data.length),zipU16(nameB.length),zipU16(0),nameB,data]);
+    locals.push(local);
+    const central=concatBytes([zipU32(0x02014b50),zipU16(20),zipU16(20),zipU16(0),zipU16(0),zipU16(0),zipU16(0),zipU32(crc),zipU32(data.length),zipU32(data.length),zipU16(nameB.length),zipU16(0),zipU16(0),zipU16(0),zipU16(0),zipU32(0),zipU32(offset),nameB]);
+    centrals.push(central); offset+=local.length;
+  });
+  const centralBlob=concatBytes(centrals),end=concatBytes([zipU32(0x06054b50),zipU16(0),zipU16(0),zipU16(centrals.length),zipU16(centrals.length),zipU32(centralBlob.length),zipU32(offset),zipU16(0)]);
+  return new Blob([...locals,centralBlob,end],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function generateInvoiceXlsxBlob(meta,lines){
+  const minItems=9,itemCount=Math.max(minItems,lines.length),headerRow=14,itemStart=15,itemEnd=itemStart+itemCount-1,blankRow=itemEnd+1,summaryRow=blankRow+1,subtotalRow=summaryRow+1,adjustRow=summaryRow+2,grandRow=summaryRow+3,footerRow=summaryRow+6;
+  const rows=[];
+  rows.push(xlsxRow(1,[],12));
+  rows.push(xlsxRow(2,[xlsxInlineCell('B2','INVOICE',1)],38));
+  rows.push(xlsxRow(3,[],12));
+  rows.push(xlsxRow(4,[xlsxInlineCell('B4','M. Bilal A. Khan')]));
+  rows.push(xlsxRow(5,[xlsxInlineCell('B5','BK STUDIO LLC · Abu Dhabi · UAE'),xlsxInlineCell('H5','Invoice #',2),xlsxNumberCell('I5',meta.number)]));
+  rows.push(xlsxRow(6,[xlsxInlineCell('B6','bkofficialuae@gmail.com'),xlsxInlineCell('H6','Submitted',2),xlsxInlineCell('I6',meta.date)]));
+  rows.push(xlsxRow(7,[xlsxInlineCell('H7','Currency',2),xlsxInlineCell('I7',meta.currency)]));
+  rows.push(xlsxRow(8,[xlsxInlineCell('B8','INVOICE TO',3),xlsxInlineCell('F8','PAYABLE TO',3)],24));
+  rows.push(xlsxRow(9,[xlsxInlineCell('B9',meta.invoiceTo,5),xlsxInlineCell('F9','BK - Sound Designer / Composer\nRoblox: bk52540\nDiscord: bk222',5)],54));
+  rows.push(xlsxRow(10,[]));rows.push(xlsxRow(11,[]));rows.push(xlsxRow(12,[]));rows.push(xlsxRow(13,[]));
+  rows.push(xlsxRow(14,[xlsxInlineCell('B14','Project',4),xlsxInlineCell('C14','Description',4),xlsxInlineCell('D14','Qty / Hrs',4),xlsxInlineCell('E14','Unit Price',4),xlsxInlineCell('F14','Total Price',4)],24));
+  for(let i=0;i<itemCount;i++){
+    const r=itemStart+i,l=lines[i];
+    if(l) rows.push(xlsxRow(r,[xlsxInlineCell(`B${r}`,l.project,5),xlsxInlineCell(`C${r}`,l.description,5),xlsxNumberCell(`D${r}`,l.qty,6),xlsxNumberCell(`E${r}`,l.rate,7),xlsxNumberCell(`F${r}`,Number(l.qty)*Number(l.rate),7,`D${r}*E${r}`)],22)); else rows.push(xlsxRow(r,[] ,22));
+  }
+  rows.push(xlsxRow(blankRow,[]));
+  rows.push(xlsxRow(summaryRow,[xlsxInlineCell(`B${summaryRow}`,'Payment Summary',3),xlsxInlineCell(`H${summaryRow}`,'Notes',3)],24));
+  const subtotal=lines.reduce((sum,l)=>sum+Number(l.qty)*Number(l.rate),0),adj=Number(meta.adjustment||0),grand=subtotal+adj;
+  rows.push(xlsxRow(subtotalRow,[xlsxInlineCell(`E${subtotalRow}`,'Subtotal',8),xlsxNumberCell(`F${subtotalRow}`,subtotal,9,`SUM(F${itemStart}:F${itemEnd})`),xlsxInlineCell(`H${subtotalRow}`,meta.notes,5)]));
+  rows.push(xlsxRow(adjustRow,[xlsxInlineCell(`E${adjustRow}`,'Adjustments',8),xlsxNumberCell(`F${adjustRow}`,adj,7)]));
+  rows.push(xlsxRow(grandRow,[xlsxInlineCell(`E${grandRow}`,'Grand Total',8),xlsxNumberCell(`F${grandRow}`,grand,9,`F${subtotalRow}+F${adjustRow}`)]));
+  rows.push(xlsxRow(grandRow+1,[]));rows.push(xlsxRow(grandRow+2,[]));
+  rows.push(xlsxRow(footerRow,[xlsxInlineCell(`B${footerRow}`,'BK STUDIO LLC · Abu Dhabi, UAE · bkofficialuae@gmail.com',2)]));
+  const merges=[`B2:F2`,`B8:E8`,`F8:I8`,`B9:E11`,`F9:I11`,`B${summaryRow}:D${summaryRow}`,`H${summaryRow}:I${summaryRow}`,`H${subtotalRow}:I${grandRow+1}`,`B${footerRow}:I${footerRow}`];
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:I${footerRow}"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="4" customWidth="1"/><col min="2" max="2" width="35.33" customWidth="1"/><col min="3" max="3" width="28.89" customWidth="1"/><col min="4" max="4" width="9.44" customWidth="1"/><col min="5" max="5" width="12.55" customWidth="1"/><col min="6" max="6" width="13" customWidth="1"/><col min="7" max="7" width="4" customWidth="1"/><col min="8" max="8" width="14.22" customWidth="1"/><col min="9" max="9" width="14.55" customWidth="1"/></cols><sheetData>${rows.join('')}</sheetData><mergeCells count="${merges.length}">${merges.map(r=>`<mergeCell ref="${r}"/>`).join('')}</mergeCells><pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/></worksheet>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="$#,##0.00"/></numFmts><fonts count="5"><font><sz val="11"/><name val="Aptos"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="28"/><name val="Aptos Display"/></font><font><b/><color rgb="FF6B7280"/><sz val="11"/><name val="Aptos"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Aptos"/></font><font><b/><color rgb="FF25316D"/><sz val="11"/><name val="Aptos"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF25316D"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF24262D"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top/><bottom style="thin"><color rgb="FFE5E7EB"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="right"/></xf><xf numFmtId="164" fontId="4" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const contentTypes=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
+  const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const workbook=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Invoice" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1" forceFullCalc="1"/></workbook>`;
+  const wbRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  return makeStoredZip({'[Content_Types].xml':contentTypes,'_rels/.rels':rels,'xl/workbook.xml':workbook,'xl/_rels/workbook.xml.rels':wbRels,'xl/styles.xml':styles,'xl/worksheets/sheet1.xml':sheet});
+}
+function downloadGeneratedInvoice(){
+  if(!invoiceBuilderContext) return;
+  const lines=selectedInvoiceLines(); if(!lines.length){alert('Select at least one invoice line.');return;}
+  const number=Math.max(1,Number($('invoiceNumber').value)||1);
+  const meta={number,date:$('invoiceDate').value||invoiceToday(),currency:$('invoiceCurrency').value||'USD',invoiceTo:$('invoiceTo').value.trim()||invoiceBuilderContext.clientName,adjustment:Number($('invoiceAdjustment').value||0)||0,notes:$('invoiceNotes').value||''};
+  const blob=generateInvoiceXlsxBlob(meta,lines); const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Invoice BK ${number}.xlsx`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+  invoiceMeta.nextNumber=Math.max(Number(invoiceMeta.nextNumber||18),number+1);
+  if($('markInvoiceSent').checked){const ids=new Set(lines.flatMap(l=>l.itemIds||[]));data.forEach(x=>{if(ids.has(x.id)&&x.payment!=='Paid'){x.payment='Invoice Sent';stampActor(x);}});}
+  save();
+  $('invoiceModalWrap').classList.remove('show'); render(); showCopyToast(`Invoice ${number} generated`);
+}
 function openClientDetails(clientName){
   const items=clientMonthItems(clientName);
   const counts=summarizeClientAssets(items);
@@ -1387,6 +1584,7 @@ function openClientDetails(clientName){
   }).join('');
   $('clientWorkBreakdown').innerHTML=`<table class="client-work-table"><thead>${head}</thead><tbody>${rows||`<tr><td colspan="6" class="empty">No work for ${esc(clientName)} in ${esc(monthText(currentMonth))}</td></tr>`}</tbody></table>`;
   if($('copyInvoiceSummaryBtn')) $('copyInvoiceSummaryBtn').style.display=isAdmin()?'inline-flex':'none';
+  if($('generateInvoiceBtn')){$('generateInvoiceBtn').style.display=isAdmin()?'inline-flex':'none';$('generateInvoiceBtn').onclick=()=>openInvoiceBuilder(clientName);}
   $('copyInvoiceSummaryBtn').onclick=async()=>{
     const text=clientInvoiceText(clientName,items,counts);
     try{await navigator.clipboard.writeText(text);}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
@@ -1395,6 +1593,7 @@ function openClientDetails(clientName){
   $('clientDetailModalWrap').classList.add('show');
 }
 function closeClientDetails(){ $('clientDetailModalWrap').classList.remove('show'); }
+function closeInvoiceBuilder(){ $('invoiceModalWrap')?.classList.remove('show'); }
 
 function toggleRankMenu(id){
   openRankMenuId = openRankMenuId===id ? null : id;
@@ -1631,7 +1830,7 @@ $('exportPeriodType').onchange=updateExportPeriodUI;
 $('exportExcelBtn').onclick=exportExcelReport;
 $('exportBackupBtn').onclick=downloadFullBackup;
 $('importBtn').onclick=()=>$('importFile').click();
-$('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const parsed=JSON.parse(r.result);if(Array.isArray(parsed)){data=parsed; clients=[...new Set(parsed.map(x=>x.client).filter(Boolean))].map(name=>({name, note:''}));monthLocks={};} else if(parsed && Array.isArray(parsed.work)){data=parsed.work; clients=Array.isArray(parsed.clients)?parsed.clients:[];monthLocks=(parsed.monthLocks&&typeof parsed.monthLocks==='object')?parsed.monthLocks:{}; for(const name of [...new Set(data.map(x=>x.client).filter(Boolean))]){ if(!clients.some(c=>c.name===name)) clients.push({name, note:''}); } } else throw 0; save(); saveClients(); saveLocks(); render(); alert('Backup imported successfully.');}catch{alert('Invalid backup file.');}};r.readAsText(f);};
+$('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const parsed=JSON.parse(r.result);if(Array.isArray(parsed)){data=parsed; clients=[...new Set(parsed.map(x=>x.client).filter(Boolean))].map(name=>({name, note:''}));monthLocks={};} else if(parsed && Array.isArray(parsed.work)){data=parsed.work; clients=Array.isArray(parsed.clients)?parsed.clients:[];monthLocks=(parsed.monthLocks&&typeof parsed.monthLocks==='object')?parsed.monthLocks:{}; invoiceMeta=(parsed.invoiceMeta&&typeof parsed.invoiceMeta==='object')?parsed.invoiceMeta:{nextNumber:18}; for(const name of [...new Set(data.map(x=>x.client).filter(Boolean))]){ if(!clients.some(c=>c.name===name)) clients.push({name, note:''}); } } else throw 0; save(); saveClients(); saveLocks(); render(); alert('Backup imported successfully.');}catch{alert('Invalid backup file.');}};r.readAsText(f);};
 
 $('sideAddClient').onclick=()=>{openClientModal();document.body.classList.remove('mobile-sidebar-open');};
 $('workAddClient').onclick=openClientModal;
