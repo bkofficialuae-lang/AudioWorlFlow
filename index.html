@@ -625,7 +625,7 @@
 
 <div class="modal-wrap" id="invoiceModalWrap">
   <div class="modal" style="max-width:980px">
-    <div class="modal-head"><div class="modal-title-wrap"><h2>Generate Invoice</h2><span class="last-edited-head" id="invoiceClientMonth"></span></div><button class="icon-btn" id="closeInvoiceModal">✕</button></div>
+    <div class="modal-head"><div class="modal-title-wrap"><h2>Generate Invoice</h2><span class="last-edited-head" id="invoiceClientMonth"></span></div><button type="button" class="icon-btn" id="closeInvoiceModal" onclick="closeInvoiceBuilder(); return false;">✕</button></div>
     <div class="form">
       <div class="invoice-form-grid">
         <div class="field"><label>Invoice #</label><input id="invoiceNumber" type="number" min="1" step="1"></div>
@@ -639,7 +639,7 @@
       <div class="invoice-total-box"><span>Subtotal</span><b id="invoiceSubtotal">$0</b><span>Adjustments</span><b id="invoiceAdjustmentPreview">$0</b><span>Grand Total</span><b id="invoiceGrandTotal">$0</b></div>
       <div class="field" style="margin-top:12px"><label>Notes</label><textarea id="invoiceNotes" rows="2">Thank you for your business.</textarea></div>
       <label style="display:flex;align-items:center;gap:9px;margin-top:10px;color:#cfd5df;font-size:12px"><input id="markInvoiceSent" type="checkbox" style="width:18px;height:18px"> Mark included work as “Invoice Sent” after generating</label>
-      <div class="actions"><button type="button" class="secondary" id="cancelInvoiceBtn">Cancel</button><button type="button" class="primary" id="downloadInvoiceBtn">Download Excel Invoice</button></div>
+      <div class="actions"><button type="button" class="secondary" id="cancelInvoiceBtn" onclick="closeInvoiceBuilder(); return false;">Cancel</button><button type="button" class="primary" id="downloadInvoiceBtn" onclick="downloadInvoiceExcelReliable(); return false;">Download Excel Invoice</button></div>
     </div>
   </div>
 </div>
@@ -1533,6 +1533,45 @@ function generateInvoiceXlsxBlob(meta,lines){
   const wbRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
   return makeStoredZip({'[Content_Types].xml':contentTypes,'_rels/.rels':rels,'xl/workbook.xml':workbook,'xl/_rels/workbook.xml.rels':wbRels,'xl/styles.xml':styles,'xl/worksheets/sheet1.xml':sheet});
 }
+function downloadInvoiceExcelReliable(){
+  try{
+    if(!invoiceBuilderContext){alert('Invoice data is not ready. Please close and reopen Generate Invoice.');return;}
+    const lines=selectedInvoiceLines();
+    if(!lines.length){alert('Select at least one invoice line.');return;}
+    const number=Math.max(1,Number($('invoiceNumber')?.value)||1);
+    const meta={
+      number,
+      date:$('invoiceDate')?.value||invoiceToday(),
+      currency:$('invoiceCurrency')?.value||'USD',
+      invoiceTo:$('invoiceTo')?.value.trim()||invoiceBuilderContext.clientName,
+      adjustment:Number($('invoiceAdjustment')?.value||0)||0,
+      notes:$('invoiceNotes')?.value||''
+    };
+    const xml=generateInvoiceSpreadsheetXml(meta,lines);
+    const blob=new Blob(['\ufeff',xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`Invoice BK ${number}.xls`;
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){} try{a.remove();}catch(e){}},1500);
+
+    invoiceMeta.nextNumber=Math.max(Number(invoiceMeta.nextNumber||18),number+1);
+    if($('markInvoiceSent')?.checked){
+      const ids=new Set(lines.flatMap(l=>l.itemIds||[]));
+      data.forEach(x=>{if(ids.has(x.id)&&x.payment!=='Paid'){x.payment='Invoice Sent';stampActor(x);}});
+    }
+    save();
+    closeInvoiceBuilder();
+    render();
+    showCopyToast(`Invoice ${number} downloaded`);
+  }catch(err){
+    console.error('Reliable invoice download failed',err);
+    alert('Invoice download failed. Please refresh the page and try again.');
+  }
+}
 function downloadGeneratedInvoice(){
   if(!invoiceBuilderContext) return;
   const lines=selectedInvoiceLines(); if(!lines.length){alert('Select at least one invoice line.');return;}
@@ -1839,7 +1878,7 @@ $('closeClientDetailModal').onclick=closeClientDetails; $('clientDetailModalWrap
 if($('closeInvoiceModal')) $('closeInvoiceModal').onclick=closeInvoiceBuilder;
 if($('cancelInvoiceBtn')) $('cancelInvoiceBtn').onclick=closeInvoiceBuilder;
 if($('invoiceModalWrap')) $('invoiceModalWrap').onclick=e=>{if(e.target===$('invoiceModalWrap')) closeInvoiceBuilder();};
-if($('downloadInvoiceBtn')) $('downloadInvoiceBtn').onclick=()=>{try{downloadGeneratedInvoice();}catch(err){console.error('Invoice download failed',err);alert('Could not generate the Excel invoice. Please try again.');}};
+if($('downloadInvoiceBtn')) $('downloadInvoiceBtn').onclick=downloadInvoiceExcelReliable;
 if($('invoiceSelectAllBtn')) $('invoiceSelectAllBtn').onclick=()=>{if(!invoiceBuilderContext)return;const allSelected=(invoiceBuilderContext.lines||[]).every(l=>l.selected);(invoiceBuilderContext.lines||[]).forEach(l=>l.selected=!allSelected);renderInvoiceBuilderLines();};
 if($('invoiceAdjustment')) $('invoiceAdjustment').oninput=updateInvoiceTotals;
 $('cancelClientBtn').onclick=closeClientModal;
