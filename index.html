@@ -808,7 +808,7 @@ async function finishCloudLogin(state,passcode,role){
     data=INITIAL_BACKUP.work;
     clients=Array.isArray(INITIAL_BACKUP.clients)?INITIAL_BACKUP.clients:[];
     monthLocks=(INITIAL_BACKUP.monthLocks&&typeof INITIAL_BACKUP.monthLocks==='object')?INITIAL_BACKUP.monthLocks:{};
-    invoiceMeta=(INITIAL_BACKUP.invoiceMeta&&typeof INITIAL_BACKUP.invoiceMeta==='object')?INITIAL_BACKUP.invoiceMeta:{nextNumber:18};
+    invoiceMeta=(INITIAL_BACKUP.invoiceMeta&&typeof INITIAL_BACKUP.invoiceMeta==='object')?INITIAL_BACKUP.invoiceMeta:{nextNumber:18,clientNumbers:{}};
     localPersist();
     const ts=await cloudRpc('save_audio_workflow_state',{p_slug:CLOUD_WORKSPACE,p_passcode:cloudPasscode,p_state:currentCloudState()});
     if(ts) cloudUpdatedAt=String(ts);
@@ -851,7 +851,7 @@ let incomeVisible=false;
 let compactCards=false;
 let monthLocks=JSON.parse(localStorage.getItem(LOCKS_KEY)||'{}');
 if(!monthLocks || typeof monthLocks!=='object' || Array.isArray(monthLocks)) monthLocks={};
-let invoiceMeta={nextNumber:18};
+let invoiceMeta={nextNumber:18,clientNumbers:{}};
 let openRankMenuId=null;
 const ASSET_PRICES=[
   ['SFX',10],['SFX ⭐',12],['Custom SFX',21],['Custom SFX ⭐',25],
@@ -1431,6 +1431,26 @@ function buildInvoiceLines(clientName,items){
   });
   return lines;
 }
+function invoiceClientKey(name){return String(name||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function defaultClientInvoiceNumber(clientName){
+  const key=invoiceClientKey(clientName).replace(/[^a-z0-9]/g,'');
+  if(key==='dobig'||key==='dobigstudios') return 18;
+  if(key==='misfits'||key==='misfitsevolution') return 1;
+  return 1;
+}
+function getClientInvoiceNextNumber(clientName){
+  if(!invoiceMeta||typeof invoiceMeta!=='object') invoiceMeta={nextNumber:18,clientNumbers:{}};
+  if(!invoiceMeta.clientNumbers||typeof invoiceMeta.clientNumbers!=='object') invoiceMeta.clientNumbers={};
+  const key=invoiceClientKey(clientName);
+  const saved=Number(invoiceMeta.clientNumbers[key]);
+  return Number.isFinite(saved)&&saved>=1?Math.floor(saved):defaultClientInvoiceNumber(clientName);
+}
+function setClientInvoiceNextNumber(clientName,nextNumber){
+  if(!invoiceMeta||typeof invoiceMeta!=='object') invoiceMeta={nextNumber:18,clientNumbers:{}};
+  if(!invoiceMeta.clientNumbers||typeof invoiceMeta.clientNumbers!=='object') invoiceMeta.clientNumbers={};
+  const key=invoiceClientKey(clientName);
+  invoiceMeta.clientNumbers[key]=Math.max(1,Math.floor(Number(nextNumber)||1));
+}
 function invoiceToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function openInvoiceBuilder(clientName){
   if(!isAdmin()) return;
@@ -1439,7 +1459,7 @@ function openInvoiceBuilder(clientName){
   const lines=buildInvoiceLines(clientName,items);
   invoiceBuilderContext={clientName,items,lines};
   $('invoiceClientMonth').textContent=`${clientName} • ${monthText(currentMonth)}`;
-  $('invoiceNumber').value=Number(invoiceMeta.nextNumber||18);
+  $('invoiceNumber').value=getClientInvoiceNextNumber(clientName);
   $('invoiceDate').value=invoiceToday();
   $('invoiceCurrency').value='USD';
   $('invoiceAdjustment').value='0';
@@ -1594,6 +1614,7 @@ function downloadInvoiceExcelReliable(){
     const url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download=`Invoice BK ${number}.xls`;a.style.display='none';document.body.appendChild(a);a.click();
     setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){} try{a.remove();}catch(e){}},1500);
+    setClientInvoiceNextNumber(invoiceBuilderContext.clientName,number+1);
     invoiceMeta.nextNumber=Math.max(Number(invoiceMeta.nextNumber||18),number+1);
     if($('markInvoiceSent')?.checked){const ids=new Set(lines.flatMap(l=>l.itemIds||[]));data.forEach(x=>{if(ids.has(x.id)&&x.payment!=='Paid'){x.payment='Invoice Sent';stampActor(x);}});}
     save();closeInvoiceBuilder();render();showCopyToast(`Invoice ${number} downloaded`);
@@ -1889,7 +1910,7 @@ $('exportPeriodType').onchange=updateExportPeriodUI;
 $('exportExcelBtn').onclick=exportExcelReport;
 $('exportBackupBtn').onclick=downloadFullBackup;
 $('importBtn').onclick=()=>$('importFile').click();
-$('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const parsed=JSON.parse(r.result);if(Array.isArray(parsed)){data=parsed; clients=[...new Set(parsed.map(x=>x.client).filter(Boolean))].map(name=>({name, note:''}));monthLocks={};} else if(parsed && Array.isArray(parsed.work)){data=parsed.work; clients=Array.isArray(parsed.clients)?parsed.clients:[];monthLocks=(parsed.monthLocks&&typeof parsed.monthLocks==='object')?parsed.monthLocks:{}; invoiceMeta=(parsed.invoiceMeta&&typeof parsed.invoiceMeta==='object')?parsed.invoiceMeta:{nextNumber:18}; for(const name of [...new Set(data.map(x=>x.client).filter(Boolean))]){ if(!clients.some(c=>c.name===name)) clients.push({name, note:''}); } } else throw 0; save(); saveClients(); saveLocks(); render(); alert('Backup imported successfully.');}catch{alert('Invalid backup file.');}};r.readAsText(f);};
+$('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const parsed=JSON.parse(r.result);if(Array.isArray(parsed)){data=parsed; clients=[...new Set(parsed.map(x=>x.client).filter(Boolean))].map(name=>({name, note:''}));monthLocks={};} else if(parsed && Array.isArray(parsed.work)){data=parsed.work; clients=Array.isArray(parsed.clients)?parsed.clients:[];monthLocks=(parsed.monthLocks&&typeof parsed.monthLocks==='object')?parsed.monthLocks:{}; invoiceMeta=(parsed.invoiceMeta&&typeof parsed.invoiceMeta==='object')?parsed.invoiceMeta:{nextNumber:18,clientNumbers:{}}; for(const name of [...new Set(data.map(x=>x.client).filter(Boolean))]){ if(!clients.some(c=>c.name===name)) clients.push({name, note:''}); } } else throw 0; save(); saveClients(); saveLocks(); render(); alert('Backup imported successfully.');}catch{alert('Invalid backup file.');}};r.readAsText(f);};
 
 $('sideAddClient').onclick=()=>{openClientModal();document.body.classList.remove('mobile-sidebar-open');};
 $('workAddClient').onclick=openClientModal;
