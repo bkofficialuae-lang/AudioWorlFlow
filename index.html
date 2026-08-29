@@ -1836,6 +1836,12 @@ $('sideAddClient').onclick=()=>{openClientModal();document.body.classList.remove
 $('workAddClient').onclick=openClientModal;
 $('closeClientModal').onclick=closeClientModal;
 $('closeClientDetailModal').onclick=closeClientDetails; $('clientDetailModalWrap').onclick=e=>{if(e.target===$('clientDetailModalWrap')) closeClientDetails();};
+if($('closeInvoiceModal')) $('closeInvoiceModal').onclick=closeInvoiceBuilder;
+if($('cancelInvoiceBtn')) $('cancelInvoiceBtn').onclick=closeInvoiceBuilder;
+if($('invoiceModalWrap')) $('invoiceModalWrap').onclick=e=>{if(e.target===$('invoiceModalWrap')) closeInvoiceBuilder();};
+if($('downloadInvoiceBtn')) $('downloadInvoiceBtn').onclick=()=>{try{downloadGeneratedInvoice();}catch(err){console.error('Invoice download failed',err);alert('Could not generate the Excel invoice. Please try again.');}};
+if($('invoiceSelectAllBtn')) $('invoiceSelectAllBtn').onclick=()=>{if(!invoiceBuilderContext)return;const allSelected=(invoiceBuilderContext.lines||[]).every(l=>l.selected);(invoiceBuilderContext.lines||[]).forEach(l=>l.selected=!allSelected);renderInvoiceBuilderLines();};
+if($('invoiceAdjustment')) $('invoiceAdjustment').oninput=updateInvoiceTotals;
 $('cancelClientBtn').onclick=closeClientModal;
 $('clientModalWrap').onclick=e=>{ if(e.target===$('clientModalWrap')) closeClientModal(); };
 $('clientForm').onsubmit=e=>{ e.preventDefault(); const name=$('clientNameOnly').value.trim(); if(!name) return; const savedName=addClientByName(name, $('clientNote').value); refreshClientOptions(savedName); closeClientModal(); };
