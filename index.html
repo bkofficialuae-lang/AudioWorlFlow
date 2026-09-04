@@ -246,6 +246,9 @@
   .assigned-asset-row b{color:#f3f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .assigned-asset-row span{color:#86efac;font-weight:900;white-space:nowrap}
   .client-select-row{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px;align-items:center}
+  .client-select-row.has-remove{grid-template-columns:minmax(0,1fr) 42px 42px}
+  .inline-remove-saved{height:42px;border:1px solid #5a3030;background:#2b2020;color:#ff9a9a;border-radius:7px;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0}
+  .inline-remove-saved:hover{background:#3a2525;border-color:#8a4545;color:#fff}
   .inline-add-client{height:42px;border:1px solid var(--line);background:#262830;color:#8ecdf8;border-radius:7px;font-size:22px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0}
   .inline-add-client:hover{background:#30343c;border-color:#5b6472;color:#fff}
   .field label{font-size:12px;font-weight:900;color:#ced3dc}.field textarea{min-height:95px;resize:vertical}
@@ -507,10 +510,10 @@
     <form class="form" id="workForm">
       <input type="hidden" id="editId" />
       <div class="grid2">
-        <div class="field"><label>Client Name *</label><div class="client-select-row"><select id="client" required></select><button type="button" class="inline-add-client" id="workAddClient" title="Add new client">＋</button></div><div class="helper">Select a client or press + to add a new one.</div></div>
+        <div class="field"><label>Client Name *</label><div class="client-select-row has-remove"><select id="client" required></select><button type="button" class="inline-add-client" id="workAddClient" title="Add new client">＋</button><button type="button" class="inline-remove-saved admin-only" id="workRemoveClient" title="Remove selected client from saved list">✕</button></div><div class="helper">Select a client, press + to add, or ✕ to remove it from the saved list.</div></div>
         <div class="field"><label>Producer</label><input id="producer" placeholder="e.g. Ahmed, Sarah, John" /></div>
       </div>
-      <div class="field"><label>Work / Project Name *</label><div class="client-select-row"><select id="title" required></select><button type="button" class="inline-add-client" id="workAddProject" title="Add new project">＋</button></div><div class="helper">Select a saved project for this client or press + to add a new one.</div></div>
+      <div class="field"><label>Work / Project Name *</label><div class="client-select-row has-remove"><select id="title" required></select><button type="button" class="inline-add-client" id="workAddProject" title="Add new project">＋</button><button type="button" class="inline-remove-saved admin-only" id="workRemoveProject" title="Remove selected project from saved list">✕</button></div><div class="helper">Select a saved project, press + to add, or ✕ to remove it from the saved list.</div></div>
       <div class="grid2">
         <div class="field"><label>Work Month *</label><input id="workMonth" type="month" required /></div>
         <div class="field"><label>Deadline</label><input id="deadline" type="date" /></div>
@@ -721,10 +724,12 @@ function localPersist(){
   localStorage.setItem(KEY,JSON.stringify(data));
   localStorage.setItem(CLIENTS_KEY,JSON.stringify(clients));
   localStorage.setItem(PROJECTS_KEY,JSON.stringify(projects));
+  localStorage.setItem(REMOVED_CLIENTS_KEY,JSON.stringify(removedClients));
+  localStorage.setItem(REMOVED_PROJECTS_KEY,JSON.stringify(removedProjects));
   localStorage.setItem(LOCKS_KEY,JSON.stringify(monthLocks));
 }
 
-function currentCloudState(){return {work:data,clients,projects,monthLocks,invoiceMeta};}
+function currentCloudState(){return {work:data,clients,projects,removedClients,removedProjects,monthLocks,invoiceMeta};}
 function isEmployee(){return cloudRole==='employee';}
 function isAdmin(){return cloudRole==='admin';}
 function currentActor(){return isEmployee()?(employeeName||'Employee'):'BK';}
@@ -802,6 +807,8 @@ async function finishCloudLogin(state,passcode,role){
   if(state&&Array.isArray(state.work))data=state.work;
   if(state&&Array.isArray(state.clients))clients=state.clients;
   if(state&&Array.isArray(state.projects))projects=state.projects;
+  if(state&&Array.isArray(state.removedClients))removedClients=state.removedClients;
+  if(state&&Array.isArray(state.removedProjects))removedProjects=state.removedProjects;
   if(state&&state.monthLocks&&typeof state.monthLocks==='object')monthLocks=state.monthLocks;
   if(isAdmin() && state&&state.invoiceMeta&&typeof state.invoiceMeta==='object') invoiceMeta={...invoiceMeta,...state.invoiceMeta};
   cloudUpdatedAt=String(state?._updated_at||'');
@@ -839,6 +846,8 @@ function applyRoleUI(){
 const KEY='monthlyWorkManager_v2';
 const CLIENTS_KEY='monthlyWorkManager_clients_v1';
 const PROJECTS_KEY='monthlyWorkManager_projects_v1';
+const REMOVED_CLIENTS_KEY='monthlyWorkManager_removedClients_v1';
+const REMOVED_PROJECTS_KEY='monthlyWorkManager_removedProjects_v1';
 const LOCKS_KEY='monthlyWorkManager_monthLocks_v1';
 let data=JSON.parse(localStorage.getItem(KEY)||'null');
 if(!data){ const legacy = localStorage.getItem('monthlyWorkManager_v1'); data = legacy ? JSON.parse(legacy) : []; }
@@ -846,12 +855,16 @@ let clients=JSON.parse(localStorage.getItem(CLIENTS_KEY)||'null');
 if(!Array.isArray(clients)) clients=[];
 let projects=JSON.parse(localStorage.getItem(PROJECTS_KEY)||'null');
 if(!Array.isArray(projects)) projects=[];
+let removedClients=JSON.parse(localStorage.getItem(REMOVED_CLIENTS_KEY)||'null');
+if(!Array.isArray(removedClients)) removedClients=[];
+let removedProjects=JSON.parse(localStorage.getItem(REMOVED_PROJECTS_KEY)||'null');
+if(!Array.isArray(removedProjects)) removedProjects=[];
 let preferredClient='';
 const derivedClients=[...new Set(data.map(x=>(x.client||'').trim()).filter(Boolean))].map(name=>({name, note:''}));
-for(const dc of derivedClients){ if(!clients.some(c=>c.name.toLowerCase()===dc.name.toLowerCase())) clients.push(dc); }
+for(const dc of derivedClients){ if(!removedClients.some(n=>String(n).toLowerCase()===dc.name.toLowerCase()) && !clients.some(c=>c.name.toLowerCase()===dc.name.toLowerCase())) clients.push(dc); }
 localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
 const derivedProjects=[...new Map((data||[]).filter(x=>(x.title||'').trim()).map(x=>[`${(x.client||'').trim().toLowerCase()}|${(x.title||'').trim().toLowerCase()}`,{client:(x.client||'').trim(),name:(x.title||'').trim()}])).values()];
-for(const dp of derivedProjects){ if(!projects.some(p=>(p.client||'').toLowerCase()===(dp.client||'').toLowerCase() && (p.name||'').toLowerCase()===dp.name.toLowerCase())) projects.push(dp); }
+for(const dp of derivedProjects){ const rk=`${(dp.client||'').trim().toLowerCase()}|${(dp.name||'').trim().toLowerCase()}`; if(!removedProjects.includes(rk) && !projects.some(p=>(p.client||'').toLowerCase()===(dp.client||'').toLowerCase() && (p.name||'').toLowerCase()===dp.name.toLowerCase())) projects.push(dp); }
 localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
 let currentMonth=new Date().toISOString().slice(0,7);
 let currentView='board';
@@ -1035,12 +1048,38 @@ function refreshProjectOptions(clientName='',selected=''){
 function addProjectByName(clientName,name){
   const client=(clientName||'').trim(), clean=(name||'').trim();
   if(!client||!clean) return false;
+  const rk=`${client.toLowerCase()}|${clean.toLowerCase()}`;
+  removedProjects=removedProjects.filter(k=>k!==rk);
   const existing=projects.find(p=>(p.client||'').trim().toLowerCase()===client.toLowerCase() && (p.name||'').trim().toLowerCase()===clean.toLowerCase());
   if(existing) return existing.name;
   projects.push({client,name:clean});
   localStorage.setItem(PROJECTS_KEY,JSON.stringify(projects));
   scheduleCloudSave();
   return clean;
+}
+
+function removeSavedClient(name){
+  const clean=(name||'').trim();
+  if(!clean) return false;
+  if(!confirm(`Remove "${clean}" from the saved client list? Existing work cards will not be deleted.`)) return false;
+  clients=clients.filter(c=>(c.name||'').trim().toLowerCase()!==clean.toLowerCase());
+  projects=projects.filter(p=>(p.client||'').trim().toLowerCase()!==clean.toLowerCase());
+  if(!removedClients.some(n=>String(n).toLowerCase()===clean.toLowerCase())) removedClients.push(clean);
+  const existingProjectKeys=(data||[]).filter(x=>(x.client||'').trim().toLowerCase()===clean.toLowerCase() && (x.title||'').trim()).map(x=>`${clean.toLowerCase()}|${(x.title||'').trim().toLowerCase()}`);
+  for(const key of existingProjectKeys) if(!removedProjects.includes(key)) removedProjects.push(key);
+  localPersist(); scheduleCloudSave(); renderSavedClients(); refreshClientOptions(''); refreshProjectOptions('',''); render();
+  return true;
+}
+
+function removeSavedProject(clientName,name){
+  const client=(clientName||'').trim(), clean=(name||'').trim();
+  if(!client||!clean) return false;
+  if(!confirm(`Remove "${clean}" from ${client}'s saved project list? Existing work cards will not be deleted.`)) return false;
+  projects=projects.filter(p=>!((p.client||'').trim().toLowerCase()===client.toLowerCase() && (p.name||'').trim().toLowerCase()===clean.toLowerCase()));
+  const key=`${client.toLowerCase()}|${clean.toLowerCase()}`;
+  if(!removedProjects.includes(key)) removedProjects.push(key);
+  localPersist(); scheduleCloudSave(); refreshProjectOptions(client,'');
+  return true;
 }
 
 function renderSavedClients(){
@@ -1051,6 +1090,7 @@ function renderSavedClients(){
 function addClientByName(name, note=''){
   const clean=name.trim();
   if(!clean) return false;
+  removedClients=removedClients.filter(n=>String(n).toLowerCase()!==clean.toLowerCase());
   const existing=clients.find(c=>c.name.toLowerCase()===clean.toLowerCase());
   if(existing){ preferredClient=existing.name; saveClients(); return existing.name; }
   clients.push({name:clean, note:note.trim()});
@@ -1870,6 +1910,20 @@ if($('workAddProject')) $('workAddProject').onclick=()=>{
   if(!name||!name.trim()) return;
   const saved=addProjectByName(client,name);
   refreshProjectOptions(client,saved||name.trim());
+};
+
+if($('workRemoveClient')) $('workRemoveClient').onclick=()=>{
+  if(!isAdmin()) return;
+  const name=$('client').value.trim();
+  if(!name){ alert('Please select a client to remove.'); return; }
+  removeSavedClient(name);
+};
+if($('workRemoveProject')) $('workRemoveProject').onclick=()=>{
+  if(!isAdmin()) return;
+  const client=$('client').value.trim(), name=$('title').value.trim();
+  if(!client){ alert('Please select a client first.'); return; }
+  if(!name){ alert('Please select a project to remove.'); return; }
+  removeSavedProject(client,name);
 };
 
 $('workForm').onsubmit=e=>{
