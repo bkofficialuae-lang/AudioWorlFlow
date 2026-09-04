@@ -510,7 +510,7 @@
         <div class="field"><label>Client Name *</label><div class="client-select-row"><select id="client" required></select><button type="button" class="inline-add-client" id="workAddClient" title="Add new client">＋</button></div><div class="helper">Select a client or press + to add a new one.</div></div>
         <div class="field"><label>Producer</label><input id="producer" placeholder="e.g. Ahmed, Sarah, John" /></div>
       </div>
-      <div class="field"><label>Work / Project Name *</label><input id="title" required placeholder="e.g. Main Menu OST" /></div>
+      <div class="field"><label>Work / Project Name *</label><div class="client-select-row"><select id="title" required></select><button type="button" class="inline-add-client" id="workAddProject" title="Add new project">＋</button></div><div class="helper">Select a saved project for this client or press + to add a new one.</div></div>
       <div class="grid2">
         <div class="field"><label>Work Month *</label><input id="workMonth" type="month" required /></div>
         <div class="field"><label>Deadline</label><input id="deadline" type="date" /></div>
@@ -720,10 +720,11 @@ function setCloudStatus(kind,text){
 function localPersist(){
   localStorage.setItem(KEY,JSON.stringify(data));
   localStorage.setItem(CLIENTS_KEY,JSON.stringify(clients));
+  localStorage.setItem(PROJECTS_KEY,JSON.stringify(projects));
   localStorage.setItem(LOCKS_KEY,JSON.stringify(monthLocks));
 }
 
-function currentCloudState(){return {work:data,clients,monthLocks,invoiceMeta};}
+function currentCloudState(){return {work:data,clients,projects,monthLocks,invoiceMeta};}
 function isEmployee(){return cloudRole==='employee';}
 function isAdmin(){return cloudRole==='admin';}
 function currentActor(){return isEmployee()?(employeeName||'Employee'):'BK';}
@@ -800,6 +801,7 @@ async function finishCloudLogin(state,passcode,role){
   }
   if(state&&Array.isArray(state.work))data=state.work;
   if(state&&Array.isArray(state.clients))clients=state.clients;
+  if(state&&Array.isArray(state.projects))projects=state.projects;
   if(state&&state.monthLocks&&typeof state.monthLocks==='object')monthLocks=state.monthLocks;
   if(isAdmin() && state&&state.invoiceMeta&&typeof state.invoiceMeta==='object') invoiceMeta={...invoiceMeta,...state.invoiceMeta};
   cloudUpdatedAt=String(state?._updated_at||'');
@@ -807,6 +809,8 @@ async function finishCloudLogin(state,passcode,role){
   if(role==='admin' && (!data||data.length===0) && INITIAL_BACKUP && Array.isArray(INITIAL_BACKUP.work) && INITIAL_BACKUP.work.length){
     data=INITIAL_BACKUP.work;
     clients=Array.isArray(INITIAL_BACKUP.clients)?INITIAL_BACKUP.clients:[];
+    projects=Array.isArray(INITIAL_BACKUP.projects)?INITIAL_BACKUP.projects:[];
+    if(!projects.length) projects=[...new Map((data||[]).filter(x=>(x.title||'').trim()).map(x=>[`${(x.client||'').trim().toLowerCase()}|${(x.title||'').trim().toLowerCase()}`,{client:(x.client||'').trim(),name:(x.title||'').trim()}])).values()];
     monthLocks=(INITIAL_BACKUP.monthLocks&&typeof INITIAL_BACKUP.monthLocks==='object')?INITIAL_BACKUP.monthLocks:{};
     invoiceMeta=(INITIAL_BACKUP.invoiceMeta&&typeof INITIAL_BACKUP.invoiceMeta==='object')?INITIAL_BACKUP.invoiceMeta:{nextNumber:18,clientNumbers:{}};
     localPersist();
@@ -834,15 +838,21 @@ function applyRoleUI(){
 
 const KEY='monthlyWorkManager_v2';
 const CLIENTS_KEY='monthlyWorkManager_clients_v1';
+const PROJECTS_KEY='monthlyWorkManager_projects_v1';
 const LOCKS_KEY='monthlyWorkManager_monthLocks_v1';
 let data=JSON.parse(localStorage.getItem(KEY)||'null');
 if(!data){ const legacy = localStorage.getItem('monthlyWorkManager_v1'); data = legacy ? JSON.parse(legacy) : []; }
 let clients=JSON.parse(localStorage.getItem(CLIENTS_KEY)||'null');
 if(!Array.isArray(clients)) clients=[];
+let projects=JSON.parse(localStorage.getItem(PROJECTS_KEY)||'null');
+if(!Array.isArray(projects)) projects=[];
 let preferredClient='';
 const derivedClients=[...new Set(data.map(x=>(x.client||'').trim()).filter(Boolean))].map(name=>({name, note:''}));
 for(const dc of derivedClients){ if(!clients.some(c=>c.name.toLowerCase()===dc.name.toLowerCase())) clients.push(dc); }
 localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
+const derivedProjects=[...new Map((data||[]).filter(x=>(x.title||'').trim()).map(x=>[`${(x.client||'').trim().toLowerCase()}|${(x.title||'').trim().toLowerCase()}`,{client:(x.client||'').trim(),name:(x.title||'').trim()}])).values()];
+for(const dp of derivedProjects){ if(!projects.some(p=>(p.client||'').toLowerCase()===(dp.client||'').toLowerCase() && (p.name||'').toLowerCase()===dp.name.toLowerCase())) projects.push(dp); }
+localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
 let currentMonth=new Date().toISOString().slice(0,7);
 let currentView='board';
 let draggedId=null;
@@ -1011,6 +1021,26 @@ function refreshClientOptions(selected=''){
   const names=[...new Set(clients.map(c=>c.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   $('client').innerHTML = `<option value="">Select client</option>` + names.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join('');
   if(selected && names.includes(selected)) $('client').value=selected;
+}
+
+function refreshProjectOptions(clientName='',selected=''){
+  const cleanClient=(clientName||'').trim().toLowerCase();
+  let names=[...new Set(projects.filter(p=>!cleanClient || (p.client||'').trim().toLowerCase()===cleanClient).map(p=>(p.name||'').trim()).filter(Boolean))];
+  if(selected && !names.some(n=>n.toLowerCase()===String(selected).trim().toLowerCase())) names.push(String(selected).trim());
+  names.sort((a,b)=>a.localeCompare(b));
+  $('title').innerHTML=`<option value="">Select project</option>`+names.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join('');
+  if(selected){ const hit=names.find(n=>n.toLowerCase()===String(selected).trim().toLowerCase()); if(hit) $('title').value=hit; }
+}
+
+function addProjectByName(clientName,name){
+  const client=(clientName||'').trim(), clean=(name||'').trim();
+  if(!client||!clean) return false;
+  const existing=projects.find(p=>(p.client||'').trim().toLowerCase()===client.toLowerCase() && (p.name||'').trim().toLowerCase()===clean.toLowerCase());
+  if(existing) return existing.name;
+  projects.push({client,name:clean});
+  localStorage.setItem(PROJECTS_KEY,JSON.stringify(projects));
+  scheduleCloudSave();
+  return clean;
 }
 
 function renderSavedClients(){
@@ -1739,8 +1769,8 @@ function openNew(){
   $('editId').value='';
   refreshClientOptions(preferredClient || '');
   $('client').value=preferredClient || $('client').value || ''; 
+  refreshProjectOptions($('client').value,'');
   $('producer').value='';
-  $('title').value='';
   $('workMonth').value=currentMonth;
   $('deadline').value='';
   $('status').value='To Do';
@@ -1773,8 +1803,8 @@ function openEdit(id){
   $('editId').value=x.id;
   refreshClientOptions(x.client);
   $('client').value=x.client;
+  refreshProjectOptions(x.client,x.title);
   $('producer').value=x.producer||'';
-  $('title').value=x.title;
   $('workMonth').value=x.workMonth;
   $('deadline').value=x.deadline||'';
   $('status').value=x.status||'To Do';
@@ -1832,6 +1862,16 @@ async function handleIncomingFiles(fileList){
   renderPreviewGrid();
 }
 
+if($('client')) $('client').onchange=()=>refreshProjectOptions($('client').value,'');
+if($('workAddProject')) $('workAddProject').onclick=()=>{
+  const client=$('client').value.trim();
+  if(!client){ alert('Please select a client first.'); return; }
+  const name=prompt(`Add a project for ${client}:`,'');
+  if(!name||!name.trim()) return;
+  const saved=addProjectByName(client,name);
+  refreshProjectOptions(client,saved||name.trim());
+};
+
 $('workForm').onsubmit=e=>{
   e.preventDefault();
   const id=$('editId').value;
@@ -1869,6 +1909,7 @@ $('workForm').onsubmit=e=>{
   if(!obj.client || !obj.title || !obj.workMonth) return;
   stampActor(obj);
   addClientByName(obj.client);
+  addProjectByName(obj.client,obj.title);
   if(id) data=data.map(x=>x.id===id?obj:x); else data.unshift(obj);
   save(); saveClients(); currentMonth=obj.workMonth; closeModal(); render();
 };
