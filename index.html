@@ -1386,17 +1386,20 @@ function renderList(){
 }
 
 function renderClients(){
+  // Clients view is month-specific: only work cards from the selected month are counted/shown.
+  const monthItems=data.filter(x=>x.workMonth===currentMonth);
   const map={};
-  data.forEach(x=>{map[x.client]??=[];map[x.client].push(x)});
-  const names=[...new Set([...clients.map(c=>c.name), ...Object.keys(map)])].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  monthItems.forEach(x=>{if(!x.client)return;map[x.client]??=[];map[x.client].push(x)});
+  const names=Object.keys(map).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  const monthLabel=monthText(currentMonth);
   if(isEmployee()){
-    $('viewRoot').innerHTML=`<div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,clientMeta=clients.find(c=>c.name===n);return `<div class="client-card" data-client="${esc(n)}"><h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||'<div class="empty">No clients yet</div>'}</div>`;
+    $('viewRoot').innerHTML=`<div style="margin:0 0 12px;color:#8f98a6;font-size:12px;font-weight:800">Showing client activity for ${esc(monthLabel)}</div><div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,completed=arr.filter(x=>x.status==='Completed').length,clientMeta=clients.find(c=>c.name===n);return `<div class="client-card" data-client="${esc(n)}"><h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>${completed} completed</p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||`<div class="empty">No client work in ${esc(monthLabel)}</div>`}</div>`;
     document.querySelectorAll('.client-card[data-client]').forEach(card=>card.onclick=()=>openClientDetails(card.dataset.client));
     return;
   }
   const totalsByClient=Object.fromEntries(names.map(n=>[n,(map[n]||[]).reduce((s,x)=>s+usdValue(x),0)]));
   const topFive=new Set([...names].sort((a,b)=>totalsByClient[b]-totalsByClient[a]).slice(0,5));
-  $('viewRoot').innerHTML=`<div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,total=totalsByClient[n],out=arr.filter(x=>x.payment!=='Paid').reduce((s,x)=>s+usdValue(x),0), clientMeta=clients.find(c=>c.name===n);return `<div class="client-card" data-client="${esc(n)}">${topFive.has(n)?'<span class="client-crown" title="Top 5 client">👑</span>':''}<h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''}</p><p>Total value</p><div class="big">${money(total)}</div><p>Outstanding: <b>${money(out)}</b></p><p>${arr.length} total work item${arr.length!==1?'s':''}</p></div>`}).join('')||'<div class="empty">No clients yet</div>'}</div>`;
+  $('viewRoot').innerHTML=`<div style="margin:0 0 12px;color:#8f98a6;font-size:12px;font-weight:800">Showing client activity for ${esc(monthLabel)}</div><div class="clients-grid">${names.map(n=>{const arr=map[n]||[],active=arr.filter(x=>x.status!=='Completed').length,completed=arr.filter(x=>x.status==='Completed').length,total=totalsByClient[n],out=arr.filter(x=>x.payment!=='Paid').reduce((s,x)=>s+usdValue(x),0), clientMeta=clients.find(c=>c.name===n);return `<div class="client-card" data-client="${esc(n)}">${topFive.has(n)?'<span class="client-crown" title="Top 5 client this month">👑</span>':''}<h3>${esc(n)}</h3>${clientMeta?.note?`<p>${esc(clientMeta.note)}</p>`:''}<p>${active} active work item${active!==1?'s':''} · ${completed} completed</p><p>Total value this month</p><div class="big">${money(total)}</div><p>Outstanding this month: <b>${money(out)}</b></p><p>${arr.length} total work item${arr.length!==1?'s':''} this month</p></div>`}).join('')||`<div class="empty">No client work in ${esc(monthLabel)}</div>`}</div>`;
   document.querySelectorAll('.client-card[data-client]').forEach(card=>card.onclick=()=>openClientDetails(card.dataset.client));
 }
 
