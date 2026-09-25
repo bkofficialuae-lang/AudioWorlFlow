@@ -201,19 +201,26 @@
   .client-card .big{font-size:18px;font-weight:900;color:white}
   .client-card{cursor:pointer;transition:border-color .14s ease,transform .14s ease,background .14s ease}
   .client-card:hover{border-color:#5b6472;background:#242424;transform:translateY(-1px)}
-  .client-detail-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
-  .client-detail-stat{background:#202227;border:1px solid var(--line);border-radius:7px;padding:11px}
+  .client-detail-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+  .client-detail-stat{background:#202227;border:1px solid var(--line);border-radius:7px;padding:10px 12px}
   .client-detail-stat .k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#8f98a6;font-weight:900}
-  .client-detail-stat .v{font-size:18px;color:#fff;font-weight:900;margin-top:5px}
-  .client-asset-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:10px}
-  .client-asset-chip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1d1f24;border:1px solid var(--line);border-radius:7px;padding:9px 10px;font-size:12px}
+  .client-detail-stat .v{font-size:18px;color:#fff;font-weight:900;margin-top:4px}
+  .client-asset-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:8px;margin-top:9px}
+  .client-asset-chip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1d1f24;border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:12px}
   .client-asset-chip b{color:#f3f4f6}.client-asset-chip span{color:#86efac;font-weight:900}
-  .client-detail-section{padding:16px 20px;border-top:1px solid var(--line)}
-  .client-detail-section h3{margin:0 0 8px;font-size:14px;color:#dce3ed}
-  .client-work-table{width:100%;border-collapse:collapse;min-width:720px}
-  .client-work-table th,.client-work-table td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}
-  .client-work-table th{color:#9fa7b3;background:#24262d;position:sticky;top:0}
-  .client-detail-scroll{overflow:auto;max-height:340px;border:1px solid var(--line);border-radius:7px}
+  .client-detail-section{padding:13px 18px;border-top:1px solid var(--line)}
+  .client-detail-section h3{margin:0 0 7px;font-size:14px;color:#dce3ed}
+  .client-work-table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .client-work-table th,.client-work-table td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:11.5px;vertical-align:top;line-height:1.25;overflow-wrap:anywhere}
+  .client-work-table th{color:#9fa7b3;background:#24262d;position:static}
+  .client-work-table th:nth-child(1){width:16%}.client-work-table th:nth-child(2){width:15%}.client-work-table th:nth-child(3){width:11%}.client-work-table th:nth-child(4){width:38%}.client-work-table th:nth-child(5){width:10%}.client-work-table th:nth-child(6){width:10%}
+  .client-detail-scroll{overflow:visible;max-height:none;border:1px solid var(--line);border-radius:7px}
+  #clientDetailModalWrap{padding:10px}
+  #clientDetailModalWrap .modal{width:min(1500px,calc(100vw - 20px));max-width:none!important;max-height:calc(100vh - 20px);overflow:auto}
+  #clientDetailModalWrap .modal-head{padding:14px 18px}
+  #clientDetailModalWrap .modal-head h2{font-size:23px}
+  #clientDetailModalWrap #clientDetailMonth{background:#262a31;border:1px solid #3a3f48;border-radius:999px;padding:5px 9px;color:#cbd5e1;font-size:11px;max-width:none}
+  #clientDetailModalWrap .invoice-actions button{padding:9px 13px;font-size:12px}
   .invoice-copy{margin-left:auto}
   .invoice-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
   .invoice-builder-table{width:100%;border-collapse:collapse;min-width:780px}
@@ -609,9 +616,9 @@
 </div>
 
 <div class="modal-wrap" id="clientDetailModalWrap">
-  <div class="modal" style="max-width:980px">
+  <div class="modal" style="max-width:1500px">
     <div class="modal-head">
-      <div class="modal-title-wrap"><h2 id="clientDetailTitle">Client Details</h2><span class="last-edited-head" id="clientDetailMonth"></span></div>
+      <div class="modal-title-wrap"><h2 id="clientDetailTitle">Client Breakdown</h2><span class="last-edited-head" id="clientDetailMonth"></span></div>
       <button class="icon-btn" id="closeClientDetailModal">✕</button>
     </div>
     <div class="client-detail-section">
@@ -1704,7 +1711,7 @@ function openClientDetails(clientName){
   const completed=items.filter(x=>x.status==='Completed').length;
   const total=items.reduce((sum,x)=>sum+usdValue(x),0);
   const outstanding=items.filter(x=>x.payment!=='Paid').reduce((sum,x)=>sum+usdValue(x),0);
-  $('clientDetailTitle').textContent=clientName;
+  $('clientDetailTitle').textContent=`${clientName} Breakdown`;
   $('clientDetailMonth').textContent=monthText(currentMonth);
   const stats=[['Work Items',items.length],['Active',active],['Completed',completed]];
   if(isAdmin()){stats.push(['Total Value',money(total)],['Outstanding',money(outstanding)]);}
