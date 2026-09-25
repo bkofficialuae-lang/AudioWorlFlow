@@ -214,7 +214,14 @@
   .client-work-table th,.client-work-table td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:11.5px;vertical-align:top;line-height:1.25;overflow-wrap:anywhere}
   .client-work-table th{color:#9fa7b3;background:#24262d;position:static}
   .client-work-table th:nth-child(1){width:16%}.client-work-table th:nth-child(2){width:15%}.client-work-table th:nth-child(3){width:11%}.client-work-table th:nth-child(4){width:38%}.client-work-table th:nth-child(5){width:10%}.client-work-table th:nth-child(6){width:10%}
+  .breakdown-assets{display:flex;flex-wrap:wrap;gap:6px}
+  .breakdown-asset-box{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #3a3e46;border-radius:6px;background:#181a1f;white-space:nowrap;font-weight:800;color:#f3f4f6}
+  .breakdown-asset-box .qty{color:#86efac;font-weight:900}
   .client-detail-scroll{overflow:visible;max-height:none;border:1px solid var(--line);border-radius:7px}
+  .client-payment-control{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .client-payment-control .client-payment-label{min-width:0}
+  .client-payment-next{width:24px;height:24px;border-radius:6px;border:1px solid #3b414b;background:#262930;color:#cbd5e1;display:inline-flex;align-items:center;justify-content:center;padding:0;font-size:14px;font-weight:900;line-height:1}
+  .client-payment-next:hover{background:#333741;border-color:#596271;color:#fff}
   #clientDetailModalWrap{padding:10px}
   #clientDetailModalWrap .modal{width:min(1500px,calc(100vw - 20px));max-width:none!important;max-height:calc(100vh - 20px);overflow:auto}
   #clientDetailModalWrap .modal-head{padding:14px 18px}
@@ -1711,15 +1718,16 @@ function openClientDetails(clientName){
   const completed=items.filter(x=>x.status==='Completed').length;
   const total=items.reduce((sum,x)=>sum+usdValue(x),0);
   const outstanding=items.filter(x=>x.payment!=='Paid').reduce((sum,x)=>sum+usdValue(x),0);
-  $('clientDetailTitle').textContent=`${clientName} Breakdown`;
-  $('clientDetailMonth').textContent=monthText(currentMonth);
+  $('clientDetailTitle').textContent=clientName;
+  $('clientDetailMonth').textContent=`[${monthText(currentMonth)} | Breakdown]`;
   const stats=[['Work Items',items.length],['Active',active],['Completed',completed]];
   if(isAdmin()){stats.push(['Total Value',money(total)],['Outstanding',money(outstanding)]);}
   $('clientDetailSummary').innerHTML=stats.map(([k,v])=>`<div class="client-detail-stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
   const entries=Object.entries(counts).filter(([,c])=>Number(c)>0).sort((a,b)=>a[0].localeCompare(b[0]));
   $('clientAssetSummary').innerHTML=entries.length?entries.map(([name,count])=>{
     const rate=assetRate(name), totalLine=rate*Number(count||0);
-    return `<div class="client-asset-chip"><b>${esc(name)}</b><span>×${count}${isAdmin()&&rate?` · ${money(totalLine)}`:''}</span></div>`;
+    const displayName=String(name).replace(/\s*⭐\s*/g,' ').replace(/\s+/g,' ').trim();
+    return `<div class="client-asset-chip"><b>${esc(displayName)}</b><span>×${count}${isAdmin()&&rate?` · ${money(totalLine)}`:''}</span></div>`;
   }).join(''):'<div class="empty" style="grid-column:1/-1;padding:14px">No priced assets recorded for this client in this month.</div>';
   const head=isAdmin()?'<tr><th>Project</th><th>Producer</th><th>Status</th><th>Assets</th><th>Payment</th><th>Value</th></tr>':'<tr><th>Project</th><th>Producer</th><th>Status</th><th>Assets</th></tr>';
   const groupedProjects=new Map();
@@ -1735,14 +1743,32 @@ function openClientDetails(clientName){
     Object.entries(x.assetCounts||{}).forEach(([n,c])=>{const num=Number(c)||0;if(num>0)g.assetCounts[n]=(g.assetCounts[n]||0)+num;});
   });
   const rows=[...groupedProjects.values()].sort((a,b)=>a.title.localeCompare(b.title)).map(g=>{
-    const assetText=Object.entries(g.assetCounts).filter(([,c])=>Number(c)>0).sort((a,b)=>a[0].localeCompare(b[0])).map(([n,c])=>`<span style="display:inline-block;margin:1px 8px 1px 0">${esc(n)} <b style="color:#86efac">×${Number(c)}</b></span>`).join('')||'—';
+    const assetText=Object.entries(g.assetCounts).filter(([,c])=>Number(c)>0).sort((a,b)=>a[0].localeCompare(b[0])).map(([n,c])=>{const cleanName=String(n).replace(/\s*⭐\s*/g,' ').replace(/\s+/g,' ').trim();return `<span class="breakdown-asset-box"><span>${esc(cleanName)}</span><span class="qty">×${Number(c)}</span></span>`;}).join('')||'—';
     const producerText=[...g.producers].join(', ')||'—';
     const statusText=g.statuses.size===1?[...g.statuses][0]:`${g.items.filter(x=>x.status==='Completed').length}/${g.items.length} Completed`;
     const paymentText=g.payments.size===1?[...g.payments][0]:'Mixed';
     const projectLabel=g.items.length>1?`${esc(g.title)} <span style="color:#8f98a8;font-size:12px;font-weight:700">(${g.items.length} merged)</span>`:esc(g.title);
-    return isAdmin()?`<tr><td><b>${projectLabel}</b></td><td>${esc(producerText)}</td><td>${esc(statusText)}</td><td><b>${assetText}</b></td><td>${esc(paymentText)}</td><td><b>${money(g.value)}</b></td></tr>`:`<tr><td><b>${projectLabel}</b></td><td>${esc(producerText)}</td><td>${esc(statusText)}</td><td><b>${assetText}</b></td></tr>`;
+    const paymentControl=`<div class="client-payment-control"><span class="client-payment-label">${esc(paymentText)}</span><button type="button" class="client-payment-next" data-client-payment-project="${encodeURIComponent(normalizeProjectKey(g.title))}" data-client-payment-name="${encodeURIComponent(clientName)}" title="Change payment status" aria-label="Change payment status">›</button></div>`;
+    return isAdmin()?`<tr><td><b>${projectLabel}</b></td><td>${esc(producerText)}</td><td>${esc(statusText)}</td><td><div class="breakdown-assets">${assetText}</div></td><td>${paymentControl}</td><td><b>${money(g.value)}</b></td></tr>`:`<tr><td><b>${projectLabel}</b></td><td>${esc(producerText)}</td><td>${esc(statusText)}</td><td><div class="breakdown-assets">${assetText}</div></td></tr>`;
   }).join('');
   $('clientWorkBreakdown').innerHTML=`<table class="client-work-table"><thead>${head}</thead><tbody>${rows||`<tr><td colspan="6" class="empty">No work for ${esc(clientName)} in ${esc(monthText(currentMonth))}</td></tr>`}</tbody></table>`;
+  document.querySelectorAll('[data-client-payment-project]').forEach(btn=>{
+    btn.onclick=e=>{
+      e.stopPropagation();
+      if(!isAdmin()) return;
+      const targetClient=decodeURIComponent(btn.dataset.clientPaymentName||'');
+      const projectKey=decodeURIComponent(btn.dataset.clientPaymentProject||'');
+      const matches=data.filter(x=>x.workMonth===currentMonth && x.client===targetClient && normalizeProjectKey(x.title)===projectKey);
+      if(!matches.length) return;
+      const unique=[...new Set(matches.map(x=>x.payment||'Not Invoiced'))];
+      const current=unique.length===1?unique[0]:'Mixed';
+      const next=current==='Not Invoiced'?'Invoice Sent':current==='Invoice Sent'?'Paid':current==='Paid'?'Not Invoiced':'Invoice Sent';
+      matches.forEach(x=>{x.payment=next;stampActor(x);});
+      save();
+      render();
+      openClientDetails(targetClient);
+    };
+  });
   if($('copyInvoiceSummaryBtn')) $('copyInvoiceSummaryBtn').style.display=isAdmin()?'inline-flex':'none';
   if($('generateInvoiceBtn')){$('generateInvoiceBtn').style.display=isAdmin()?'inline-flex':'none';$('generateInvoiceBtn').onclick=()=>openInvoiceBuilder(clientName);}
   $('copyInvoiceSummaryBtn').onclick=async()=>{
