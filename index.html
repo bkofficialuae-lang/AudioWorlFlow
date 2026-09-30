@@ -1720,15 +1720,18 @@ function downloadGeneratedInvoice(){
 function openClientDetails(clientName){
   const items=clientMonthItems(clientName);
   const counts=summarizeClientAssets(items);
-  const active=items.filter(x=>x.status!=='Completed').length;
-  const completedAssets=items.filter(x=>x.status==='Completed').reduce((sum,x)=>{
-    return sum+Object.values(x.assetCounts||{}).reduce((assetSum,count)=>assetSum+(Number(count)||0),0);
-  },0);
+  const activeItems=items.filter(x=>x.status!=='Completed');
+  const active=activeItems.length;
   const total=items.reduce((sum,x)=>sum+usdValue(x),0);
   const outstanding=items.filter(x=>x.payment!=='Paid').reduce((sum,x)=>sum+usdValue(x),0);
   $('clientDetailTitle').textContent=clientName;
   $('clientDetailMonth').textContent=`[${monthText(currentMonth)} | Breakdown]`;
   const totalAssets=Object.values(counts).reduce((sum,c)=>sum+(Number(c)||0),0);
+  const completedCounts=summarizeClientAssets(items.filter(x=>x.status==='Completed'));
+  let completedAssets=Object.values(completedCounts).reduce((sum,c)=>sum+(Number(c)||0),0);
+  // If there are no active work items, every asset in the breakdown is completed.
+  // This also keeps legacy cards with older completion metadata from understating the completed asset count.
+  if(active===0) completedAssets=totalAssets;
   const stats=[['Total Assets',totalAssets],['Active',active],['Completed',completedAssets]];
   if(isAdmin()){stats.push(['Total Value',money(total)],['Outstanding',money(outstanding)]);}
   $('clientDetailSummary').innerHTML=stats.map(([k,v])=>`<div class="client-detail-stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
