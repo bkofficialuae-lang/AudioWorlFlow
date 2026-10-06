@@ -158,6 +158,11 @@
   .card:active{cursor:grabbing}
   .card:hover{border-color:rgba(255,255,255,.78);transform:scale(1.006);box-shadow:0 14px 30px rgba(0,0,0,.32), inset 0 0 0 1px rgba(255,255,255,.78)}
   .card h4{margin:7px 42px 2px 0;font-size:14px;line-height:1.2}
+  .portfolio-marker{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;min-width:16px;border-radius:999px;background:#1285c8;color:#fff;font-size:9px;font-weight:900;line-height:1;margin-left:5px;vertical-align:1px;box-shadow:0 0 0 1px rgba(255,255,255,.12);cursor:default}
+  .portfolio-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg-2);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:7px;font-weight:800;cursor:pointer;text-align:left}
+  .portfolio-toggle .portfolio-state{padding:4px 9px;border-radius:999px;background:#30323a;color:#aeb6c2;font-size:11px;font-weight:900}
+  .portfolio-toggle.yes{border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.08)}
+  .portfolio-toggle.yes .portfolio-state{background:rgba(34,197,94,.18);color:#86efac}
   .client{font-size:15px;color:#86d1ff;font-weight:800;letter-spacing:.02em}
 .card-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;padding-right:42px;min-height:38px}
   .card-actions{display:flex;flex-direction:column;gap:5px;align-items:center;position:absolute;top:9px;right:9px;z-index:5}
@@ -564,6 +569,10 @@
       <div class="grid2">
         <div class="field finance-only"><label>Payment Status</label><select id="payment"><option>Not Invoiced</option><option>Invoice Sent</option><option>Partial Payment</option><option>Paid</option></select></div>
         <div class="field"><label>Mark Completed</label><label style="display:flex;align-items:center;gap:10px;background:var(--bg-2);border:1px solid var(--line);padding:12px;border-radius:7px"><input id="completedTick" type="checkbox" style="width:18px;height:18px"> <span class="helper" style="font-size:14px;color:var(--text)">Tick this if the work is completed</span></label></div>
+      </div>
+      <div class="field admin-only">
+        <label>Portfolio</label>
+        <button type="button" class="portfolio-toggle" id="portfolioToggle" data-state="no"><span>Include this project in portfolio?</span><span class="portfolio-state" id="portfolioState">NO</span></button>
       </div>
       <div class="grid2 finance-only">
         <div class="field"><label>Payment Date</label><input id="paymentReminderDate" type="date" /><div class="helper">Set when you expect or need to check the payment.</div></div>
@@ -1381,7 +1390,7 @@ function cardHtml(x){
         ${openRankMenuId===x.id ? `<div class="card-rank-menu"><button type="button" class="card-rank-step card-rank-minus" data-id="${x.id}" title="Decrease">−</button><span class="card-rank-value">${Number(x.cardRank||0)}</span><button type="button" class="card-rank-step card-rank-plus" data-id="${x.id}" title="Increase">+</button></div>` : ''}
       </div>
     </div>
-    <h4>${esc(x.title)}</h4>
+    <h4>${esc(x.title)}${x.portfolio?`<span class="portfolio-marker" title="Portfolio project">P</span>`:''}</h4>
     ${deadlineHtml(x.deadline,x.status)}
     <div class="meta">
       <span class="pill ${x.priority.toLowerCase()}">${esc(x.priority)}</span>
@@ -1850,6 +1859,15 @@ function setAddModeUI(isEdit){
   $('todoHint').style.display=isEdit?'none':'block';
 }
 
+function setPortfolioToggle(value){
+  const btn=$('portfolioToggle'), state=$('portfolioState');
+  if(!btn||!state) return;
+  const yes=!!value;
+  btn.dataset.state=yes?'yes':'no';
+  btn.classList.toggle('yes',yes);
+  state.textContent=yes?'YES':'NO';
+}
+
 function openNew(){
   if(!ensureUnlocked('add work')) return;
   $('modalTitle').textContent='Add Work';
@@ -1874,6 +1892,7 @@ function openNew(){
   if($('paymentReminderDate')) $('paymentReminderDate').value='';
   if($('paymentReminderTime')) $('paymentReminderTime').value='';
   $('completedTick').checked=false;
+  setPortfolioToggle(false);
   $('referenceLink').value='';
   $('notes').value='';
   tempImages=[];
@@ -1920,6 +1939,7 @@ function openEdit(id){
     if($('paymentReminderTime')) $('paymentReminderTime').value=x.paymentReminderTime||'';
   }
   $('completedTick').checked=(x.status==='Completed');
+  setPortfolioToggle(!!x.portfolio);
   $('referenceLink').value=x.referenceLink||'';
   $('notes').value=x.notes||'';
   tempImages=JSON.parse(JSON.stringify(x.images||[]));
@@ -1974,6 +1994,11 @@ if($('workRemoveProject')) $('workRemoveProject').onclick=()=>{
   removeSavedProject(client,name);
 };
 
+if($('portfolioToggle')) $('portfolioToggle').onclick=()=>{
+  if(!isAdmin()) return;
+  setPortfolioToggle($('portfolioToggle').dataset.state!=='yes');
+};
+
 $('workForm').onsubmit=e=>{
   e.preventDefault();
   const id=$('editId').value;
@@ -2004,6 +2029,7 @@ $('workForm').onsubmit=e=>{
       paymentReminderDone: (existing.paymentReminderDate===($('paymentReminderDate')?.value||'') && existing.paymentReminderTime===($('paymentReminderTime')?.value||'')) ? !!existing.paymentReminderDone : false,
       paymentReminderCleared: (existing.paymentReminderDate===($('paymentReminderDate')?.value||'') && existing.paymentReminderTime===($('paymentReminderTime')?.value||'')) ? !!existing.paymentReminderCleared : false
     }:{}),
+    portfolio:$('portfolioToggle')?.dataset.state==='yes',
     referenceLink:$('referenceLink').value.trim(),
     notes:$('notes').value.trim(),
     images:tempImages
