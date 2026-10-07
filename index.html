@@ -308,6 +308,46 @@
   .brand{display:flex;align-items:center;justify-content:center;min-height:0;padding:0 8px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
   .column{display:flex;flex-direction:column;height:calc(100vh - 290px);min-height:420px;max-height:720px;overflow:hidden}
   .cards{flex:1;min-height:0;max-height:none;overflow-y:scroll;overflow-x:hidden;padding-right:5px;padding-bottom:4px}
+/* Laptop / smaller desktop optimization: keep the 4-column 2K-style board without crowding cards */
+@media (min-width:1101px) and (max-width:1900px){
+  .app{grid-template-columns:245px minmax(0,1fr)}
+  .sidebar{padding:18px 12px}
+  .brand-logo{width:118px;height:118px}
+  .brand{padding:6px 8px 14px;margin-bottom:12px}
+  .nav{gap:6px}.nav button{padding:10px 11px;font-size:14px}
+  .add{margin-top:14px;padding:11px 12px}
+  .income-box,.backup,.quick-links{margin-top:14px;padding:12px}
+  main{padding:18px}
+  .topbar{gap:12px;margin-bottom:14px}
+  .headline h2{font-size:27px}.headline p{font-size:16px;margin-top:6px}
+  .hero-left{gap:9px}.hero-controls{gap:9px}
+  .month-switch{gap:7px;padding:6px}.month-switch button,.icon-btn{width:36px;height:36px}
+  .month-label{min-width:158px;font-size:15px}.year-select{height:36px}
+  .top-right-cluster{gap:8px}.timezone-box{min-width:205px;padding:6px 8px}
+  .top-actions{min-width:136px;max-width:148px;gap:6px}
+  .top-actions .primary{padding:10px 12px}.shrink-btn{padding:8px 9px;font-size:11px}
+  .stats{gap:8px;margin-bottom:14px;grid-template-columns:repeat(6,minmax(95px,1fr))}
+  .stat{padding:12px}.stat .label{font-size:11px}.stat .value{font-size:25px;margin-top:5px}
+  .toolbar{gap:8px;padding:9px;margin-bottom:14px}.toolbar input,.toolbar select{padding:9px 10px}
+  .board{gap:10px}
+  .column{padding:9px;min-width:0}
+  .column h3{font-size:12px;margin:1px 1px 9px}
+  .cards{gap:8px;padding:2px 3px 3px 2px}
+  .card{padding:10px 9px;border-radius:7px}
+  .card-top{gap:5px;padding-right:36px;min-height:34px}
+  .client{font-size:14px}.producer{font-size:11.5px;margin-top:1px}
+  .card h4{font-size:13px;margin:5px 36px 1px 0}
+  .deadline{font-size:11px;margin-top:4px}
+  .meta{gap:4px;margin-top:5px;padding-right:32px}
+  .pill{font-size:10px;padding:5px 6px}
+  .money{font-size:11px;margin-top:4px}
+  .card-actions{top:7px;right:7px;gap:4px}
+  .complete-btn,.duplicate-btn,.card-delete-btn{width:24px;height:24px;font-size:12px}
+  .card-rank-btn{width:34px;height:34px;min-width:34px;max-width:34px;min-height:34px;max-height:34px;flex-basis:34px;font-size:12px}
+  .card-rank-btn.empty{font-size:15px}
+  .note-preview{font-size:10px;padding:4px 6px;margin-top:4px}
+}
+
 @media(max-width:1100px){
     .app{grid-template-columns:1fr}
     .sidebar{display:block;position:fixed;left:0;top:0;width:min(330px,88vw);height:100dvh;z-index:1200;transform:translateX(-105%);transition:transform .22s ease;box-shadow:18px 0 45px rgba(0,0,0,.45)}
