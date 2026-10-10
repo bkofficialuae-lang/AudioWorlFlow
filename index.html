@@ -683,7 +683,7 @@
       <div class="client-asset-grid" id="clientAssetSummary"></div>
     </div>
     <div class="client-detail-section">
-      <h3>Project Summary <span style="color:#8f98a8;font-size:12px;font-weight:700">(same project names merged)</span></h3>
+      <h3>Project Summary</h3>
       <div class="client-detail-scroll" id="clientWorkBreakdown"></div>
     </div>
   </div>
@@ -1808,7 +1808,7 @@ function openClientDetails(clientName){
     const producerText=[...g.producers].join(', ')||'—';
     const statusText=g.statuses.size===1?[...g.statuses][0]:`${g.items.filter(x=>x.status==='Completed').length}/${g.items.length} Completed`;
     const paymentText=g.payments.size===1?[...g.payments][0]:'Mixed';
-    const projectLabel=g.items.length>1?`${esc(g.title)} <span style="color:#8f98a8;font-size:12px;font-weight:700">(${g.items.length} merged)</span>`:esc(g.title);
+    const projectLabel=esc(g.title);
     const paymentControl=`<div class="client-payment-control"><span class="client-payment-label">${esc(paymentText)}</span><button type="button" class="client-payment-next" data-client-payment-project="${encodeURIComponent(normalizeProjectKey(g.title))}" data-client-payment-name="${encodeURIComponent(clientName)}" title="Change payment status" aria-label="Change payment status">›</button></div>`;
     return isAdmin()?`<tr><td><b>${projectLabel}</b></td><td>${esc(producerText)}</td><td>${esc(statusText)}</td><td><div class="breakdown-assets">${assetText}</div></td><td>${paymentControl}</td><td><b>${money(g.value)}</b></td></tr>`:`<tr><td><b>${projectLabel}</b></td><td>${esc(producerText)}</td><td>${esc(statusText)}</td><td><div class="breakdown-assets">${assetText}</div></td></tr>`;
   }).join('');
