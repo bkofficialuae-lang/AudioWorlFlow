@@ -1,0 +1,42 @@
+name: Generate optimized BK favicons
+on:
+  push:
+    paths:
+      - 'audio-logo.png.png'
+      - '.github/workflows/generate-favicons.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --quiet Pillow
+      - name: Crop logo and save three PNG sizes
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          im = Image.open('audio-logo.png.png').convert('RGBA')
+          alpha = im.getchannel('A')
+          bbox = alpha.point(lambda p: 255 if p>15 else 0).getbbox()
+          if not bbox: raise ValueError('Logo is fully transparent')
+          trimmed = im.crop(bbox)
+          side = max(trimmed.size)
+          square = Image.new('RGBA', (side,side), (0,0,0,0))
+          square.alpha_composite(trimmed, ((side-trimmed.width)//2,(side-trimmed.height)//2))
+          for size in (16,32,48):
+              square.resize((size,size),Image.Resampling.LANCZOS).save(f'favicon-{size}.png',optimize=True)
+          PY
+      - name: Commit favicon files
+        run: |
+          git add favicon-16.png favicon-32.png favicon-48.png
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Generate optimized BK favicon PNGs'
+            git push
+          fi
